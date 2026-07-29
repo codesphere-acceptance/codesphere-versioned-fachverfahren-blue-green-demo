@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// Liveness only — deliberately does not touch the database, so it answers
-// "is the process up?" rather than "is everything healthy?".
-// ci.dev.yml / ci.qa.yml use tcp://localhost:3000 for healthEndpoint; this
-// route exists for humans and for anything that wants an HTTP check.
+// Liveness only. It does not touch the database, so it answers "is the process
+// up?" rather than "is every dependency healthy?".
+// ci.dev.yml / ci.qa.yml use tcp://localhost:3000 for healthEndpoint; this route
+// exists for HTTP checks.
 async function liveHealthHandler(_ctx: {
 	request: Request;
 }): Promise<Response> {
