@@ -1,0 +1,23 @@
+# Matches the learning platform's toolchain so the demo runs on the same
+# versions the cited ci.prod.yml runs on.
+[tools]
+node = "22.22.2"
+pnpm = "9.15.9"
+
+[tasks.setup]
+description = "Bootstrap from clone to running app"
+run = """
+pnpm install
+pnpm dev:up
+pnpm db:migrate
+echo ""
+echo "Setup complete. Run 'mise run dev' and open http://localhost:3000."
+"""
+
+[tasks.dev]
+description = "Start the dev server"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Build demo-app"
+run = "pnpm build"

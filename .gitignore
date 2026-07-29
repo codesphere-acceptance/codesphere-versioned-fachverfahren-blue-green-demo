@@ -1,0 +1,25 @@
+.DS_Store
+.claude/.cc-writes/
+.local/
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+node_modules/
+.pnpm-store/
+
+# Editor / IDE
+.vscode/
+
+# Build output
+.output/
+.nitro/
+.tanstack/
+.vite/
+*.tsbuildinfo
+coverage/
+
+# Local env — never commit real values; see demo-app/.env.example
+.env
+.env.local

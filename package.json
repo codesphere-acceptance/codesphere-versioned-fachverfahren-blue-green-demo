@@ -1,0 +1,23 @@
+{
+  "name": "@codesphere-demo/root",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "dev": "pnpm --dir demo-app dev",
+    "build": "pnpm --dir demo-app build",
+    "start": "pnpm --dir demo-app start",
+    "test": "pnpm --dir demo-app test",
+    "typecheck": "pnpm --dir demo-app typecheck",
+    "db:generate": "pnpm --dir demo-app db:generate",
+    "db:migrate": "pnpm --dir demo-app db:migrate",
+    "db:seed:dev": "pnpm --dir demo-app db:seed:dev",
+    "dev:up": "docker compose -f infrastructure/dev/docker-compose.yml up -d --wait",
+    "dev:down": "docker compose -f infrastructure/dev/docker-compose.yml down",
+    "dev:reset": "docker compose -f infrastructure/dev/docker-compose.yml down -v",
+    "dev:logs": "docker compose -f infrastructure/dev/docker-compose.yml logs -f"
+  }
+}

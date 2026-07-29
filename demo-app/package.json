@@ -1,0 +1,43 @@
+{
+  "name": "@codesphere-demo/app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "dotenv -e .env.local -- vite dev --port 3000",
+    "dev:ci": "vite dev --port 3000",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "dotenv -e .env.local -- drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate --config drizzle.config.ts",
+    "db:migrate:ci": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:seed:dev": "dotenv -e .env.local -- tsx ./src/db/seed.dev.ts",
+    "db:seed:dev:ci": "tsx ./src/db/seed.dev.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.132.0",
+    "@tanstack/react-start": "^1.132.0",
+    "@tanstack/router-plugin": "^1.132.0",
+    "drizzle-orm": "0.45.2",
+    "nitro": "3.0.1-alpha.2",
+    "pg": "^8.19.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.18.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.1.7",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.0.5"
+  }
+}

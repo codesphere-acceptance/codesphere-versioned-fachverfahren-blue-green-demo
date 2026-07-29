@@ -1,0 +1,104 @@
+# Codesphere landscape — QA stage.
+#
+# TanStack Start / Nitro app (demo-app) plus a managed Postgres provider and an
+# Adminer container, all in the same landscape.
+#
+# This is the production path: prepare produces a build, and the run stage
+# serves the compiled Nitro output. ci.dev.yml instead runs the Vite dev server
+# with hot reload — same repository, same landscape shape, different mode.
+#
+#   install -> typecheck -> test -> build -> migrate -> start
+#
+# The prepare stage is the fast gate: a broken commit never reaches deploy.
+# Secrets come from the workspace vault; per-stage coordinates come from
+# workspace env.
+schemaVersion: v0.4
+
+prepare:
+  steps:
+    - command: corepack enable
+    - command: corepack prepare pnpm@9.15.9 --activate
+    - command: pnpm install --frozen-lockfile
+    - command: pnpm --dir demo-app typecheck
+    - command: pnpm --dir demo-app test
+    - command: pnpm --dir demo-app build
+
+# Required by the v0.4 schema even though nothing runs here. Tests live in
+# prepare — see docs/one-loop.md, Phase 4.
+test:
+  steps: []
+
+run:
+  postgres:
+    provider:
+      name: postgres
+      schemaVersion: v1
+    plan:
+      id: 0
+      parameters:
+        storage: 4096
+        cpu: 1
+        memory: 1024
+    config:
+      version: "17.9"
+      userName: demo_app
+      databaseName: demo_app
+    secrets:
+      userPassword: ${{ vault.POSTGRES_PASSWORD }}
+      superuserPassword: ${{ vault.POSTGRES_SUPERUSER_PASSWORD }}
+
+  web:
+    healthEndpoint: tcp://localhost:3000
+    # plan is instance-specific, but 101 is used by both the learning platform
+    # and the Mealie reference config. Verify against the target instance.
+    plan: 101
+    replicas: 1
+    network:
+      ports:
+        - port: 3000
+          isPublic: false
+      paths:
+        - port: 3000
+          path: /
+    env:
+      # Stable QA origin from workspace env, not the ephemeral dev domain.
+      APP_BASE_URL: ${{ workspace.env['APP_BASE_URL'] }}
+      # Constructed from the service key under run: (the trailing -postgres).
+      # Rename the postgres service above and this changes with it.
+      POSTGRES_HOST: ms-postgres-v1-${{ team.id }}-landscape-${{ workspace.id }}-postgres.ms-postgres.svc.cluster.local
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: demo_app
+      POSTGRES_PASSWORD: ${{ vault.POSTGRES_PASSWORD }}
+      POSTGRES_DB: demo_app
+      NODE_ENV: production
+      PORT: "3000"
+    volumeMounts:
+      - name: _workspace
+        mountPath: /home/user/app
+        workspacePath: ""
+    steps:
+      # No dev seed in QA; migrations run before the server starts.
+      - command: bash infrastructure/codesphere/start-app.sh
+
+  adminer:
+    # `image` selects the base image; `steps` is still what runs. Every service
+    # needs steps + healthEndpoint, image-based or not.
+    image: adminer:4
+    # http:// rather than tcp:// — a TCP probe opens and drops the socket every
+    # 10s, which PHP logs as "Closed without sending a request" and which proves
+    # nothing about whether Adminer actually serves. Matches the Mealie config.
+    healthEndpoint: http://localhost:8080/
+    steps:
+      - command: php -S 0.0.0.0:8080 -t /var/www/html
+    plan: 101
+    replicas: 1
+    network:
+      ports:
+        - port: 8080
+          isPublic: false
+      paths:
+        - port: 8080
+          path: /db
+          stripPath: true
+    env:
+      ADMINER_DEFAULT_SERVER: ms-postgres-v1-${{ team.id }}-landscape-${{ workspace.id }}-postgres.ms-postgres.svc.cluster.local

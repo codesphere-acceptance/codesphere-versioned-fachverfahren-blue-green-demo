@@ -1,0 +1,36 @@
+# ===========================================
+# Docker Compose for Local Development
+# ===========================================
+# Local Postgres for demo-app. On Codesphere this role is filled by the managed
+# Postgres declared in ci.dev.yml / ci.qa.yml — this file exists only so the app
+# can be developed and tested without a workspace.
+#
+# Usage (from repo root):
+#   pnpm dev:up      # start
+#   pnpm dev:down    # stop, keep data
+#   pnpm dev:reset   # stop and DESTROY the volume
+# ===========================================
+
+name: codesphere-platform-demonstration
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    ports:
+      - "${DEMO_POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${DEMO_POSTGRES_USER:-demo_app}
+      POSTGRES_PASSWORD: ${DEMO_POSTGRES_PASSWORD:-demo_app}
+      POSTGRES_DB: ${DEMO_POSTGRES_DB:-demo_app}
+    volumes:
+      # Postgres 18+ stores cluster data under a versioned subdirectory of
+      # /var/lib/postgresql (not /var/lib/postgresql/data). See docker-library/postgres#1259.
+      - pgdata_demo:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DEMO_POSTGRES_USER:-demo_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata_demo:
