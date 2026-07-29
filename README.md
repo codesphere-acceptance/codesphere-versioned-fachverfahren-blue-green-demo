@@ -1,90 +1,90 @@
 # Codesphere Platform Demonstration
 
-Demo application and landscape definitions for the Codesphere application developer lifecycle.
+A small TanStack Start application with Codesphere landscape definitions for a
+development and QA setup.
 
-## What is here
+## Contents
 
-| Path | What it is |
-|---|---|
-| **[demo-app/](demo-app)** | TanStack Start application with Drizzle ORM and managed Postgres |
-| **[ci.dev.yml](ci.dev.yml)** / **[ci.qa.yml](ci.qa.yml)** | Landscape definitions. `dev` runs the Vite dev server with hot reload; `qa` builds and serves the compiled output |
-| **[infrastructure/](infrastructure)** | Local Postgres via Docker Compose; Codesphere startup script for deployed landscapes |
+- `demo-app/`: TanStack Start application using Drizzle ORM and Postgres.
+- `ci.dev.yml` and `ci.qa.yml`: Codesphere landscape definitions. The dev
+  profile runs Vite with hot reload; the QA profile builds and serves the
+  compiled app.
+- `infrastructure/`: Local Postgres setup for development and the Codesphere
+  startup script used by deployed landscapes.
 
-## Local development
+## Local Development
 
-This section is about running the app **on your machine**. It is not the Codesphere **dev
-stage** — that is `ci.dev.yml` deployed to a workspace. Locally, Docker Compose stands in for
-managed Postgres; Vite runs the app in dev mode instead of the Nitro build from `prepare`.
+Local development runs the app on your machine. Docker Compose provides the
+Postgres database, and Vite serves the app in development mode.
+
+The Codesphere landscapes use `ci.dev.yml`, `ci.qa.yml`, and
+`infrastructure/codesphere/start-app.sh` instead of the local `.env.local` file.
 
 ### Prerequisites
 
-| Tool | Version | Notes |
-|---|---|---|
-| **Node** | 22.22.x | Pinned in [`.mise.toml`](.mise.toml); `>=22.22.0` in `package.json` |
-| **pnpm** | 9.15.9 | Via `corepack enable` or mise |
-| **Docker** | any recent | For local Postgres only |
+- Node `22.22.x`, pinned in `.mise.toml` and required by `package.json`.
+- pnpm `9.15.9`, available through `corepack enable` or mise.
+- Docker, used only for the local Postgres database.
 
-With [mise](https://mise.jdx.dev/) installed, `mise trust` then `mise install` picks up the
-right Node and pnpm automatically.
+With [mise](https://mise.jdx.dev/) installed, run `mise trust` and
+`mise install` to install the pinned Node and pnpm versions.
 
-### First-time setup
+### First-Time Setup
 
 ```bash
 cp demo-app/.env.example demo-app/.env.local   # edit if you change the Postgres port
 pnpm install
-pnpm dev:up          # Postgres on localhost:5433 — see docker-compose.yml
+pnpm dev:up          # start Postgres on localhost:5433
 pnpm db:migrate      # apply committed Drizzle migrations
-pnpm db:seed:dev     # optional — two reference messages, like ci.dev.yml's SEED_DEV=1
-pnpm dev             # Vite dev server → http://localhost:3000
+pnpm db:seed:dev     # optional sample messages
+pnpm dev             # start the app at http://localhost:3000
 ```
 
-Or, with mise: `mise run setup` then `mise run dev`.
+With mise, `mise run setup` runs install, starts Postgres, and applies
+migrations. Then run `mise run dev`.
 
-`demo-app/.env.local` is gitignored. It supplies `DATABASE_URL` and `APP_BASE_URL` to the app
-and to Drizzle CLI commands. On Codesphere those values come from `ci.dev.yml` / `ci.qa.yml`
-and `infrastructure/codesphere/start-app.sh` instead — `.env.local` is never used there.
+`demo-app/.env.local` is gitignored. It provides `DATABASE_URL` and
+`APP_BASE_URL` for local app and Drizzle CLI commands.
 
-### Day-to-day workflow
+### Daily Workflow
 
-Postgres persists in a Docker volume between restarts. After the first setup you usually need
-only:
+Postgres data persists in a Docker volume between restarts. After the first
+setup, the usual local workflow is:
 
 ```bash
-pnpm dev:up          # if Docker was stopped
+pnpm dev:up
 pnpm dev
 ```
 
-Stop Postgres when done: `pnpm dev:down`. Wipe the database and start fresh:
-`pnpm dev:reset` then `pnpm db:migrate` (and optionally `pnpm db:seed:dev`).
+Use `pnpm dev:down` to stop Postgres and keep the data volume. Use
+`pnpm dev:reset` to stop Postgres and delete the volume, then run
+`pnpm db:migrate` again.
 
 ### Commands
 
-All commands run from the **repository root** unless noted.
+- `pnpm dev`: Starts the Vite dev server for `demo-app/` on port `3000`.
+- `pnpm build`: Builds the production app into `demo-app/.output/`.
+- `pnpm start`: Runs the built Nitro server. Run `pnpm build` first.
+- `pnpm test`: Runs Vitest unit tests. No database is required.
+- `pnpm typecheck`: Runs `tsc --noEmit` for `demo-app/`.
+- `pnpm dev:up`: Starts local Postgres from
+  `infrastructure/dev/docker-compose.yml`.
+- `pnpm dev:down`: Stops local Postgres and keeps the data volume.
+- `pnpm dev:reset`: Stops local Postgres and deletes the data volume.
+- `pnpm dev:logs`: Tails the Postgres container logs.
+- `pnpm db:migrate`: Applies migrations. Requires Postgres and `.env.local`.
+- `pnpm db:generate`: Generates a migration after schema changes.
+- `pnpm db:seed:dev`: Inserts sample messages if the table is empty.
 
-| Command | What it does |
-|---|---|
-| `pnpm dev` | Vite dev server with HMR (`demo-app/`, port 3000) |
-| `pnpm build` | Production build → `demo-app/.output/` |
-| `pnpm start` | Run the built Nitro server (needs `pnpm build` first) |
-| `pnpm test` | Unit tests (Vitest; no database required) |
-| `pnpm typecheck` | `tsc --noEmit` on `demo-app/` |
-| `pnpm dev:up` | Start local Postgres (`infrastructure/dev/docker-compose.yml`) |
-| `pnpm dev:down` | Stop Postgres, keep data volume |
-| `pnpm dev:reset` | Stop Postgres and **destroy** the data volume |
-| `pnpm dev:logs` | Tail Postgres container logs |
-| `pnpm db:migrate` | Apply migrations (needs Postgres up + `.env.local`) |
-| `pnpm db:generate` | Generate a new migration after schema changes |
-| `pnpm db:seed:dev` | Insert reference messages if the table is empty |
+### Quality Checks
 
-### Quality checks
-
-Mirrors what `ci.dev.yml` runs in `prepare` (minus the pnpm pin steps):
+Run the same checks used before the app starts in Codesphere:
 
 ```bash
 pnpm typecheck && pnpm test && pnpm build
 ```
 
-To smoke-test the production artifact locally (what `run` actually starts on Codesphere):
+To smoke-test the production build locally:
 
 ```bash
 pnpm build
@@ -93,21 +93,22 @@ APP_BASE_URL=http://localhost:3000 \
 pnpm start
 ```
 
-Then hit http://localhost:3000 and http://localhost:3000/api/health/live.
+Then open http://localhost:3000 and
+http://localhost:3000/api/health/live.
 
 ### Troubleshooting
 
-**Port 5433 already in use.** Another project's Postgres may be bound to it (default in
-`docker-compose.yml`). Either stop that container or override the host port:
+**Port 5433 is already in use.** Another local Postgres container may be using
+the port. Stop that container or override the host port:
 
 ```bash
 DEMO_POSTGRES_PORT=5435 pnpm dev:up
 ```
 
-…and update `DATABASE_URL` in `demo-app/.env.local` to match.
+Then update `DATABASE_URL` in `demo-app/.env.local` to use the same port.
 
-**`pnpm dev:up` fails with "permission denied" on the Docker socket.** Docker Desktop (or the
-daemon) is not running.
+**`pnpm dev:up` fails with "permission denied" on the Docker socket.** Start
+Docker Desktop or the Docker daemon.
 
-**Migrations fail / connection refused.** Postgres is not up (`pnpm dev:up`) or `.env.local`
-points at the wrong port.
+**Migrations fail or connection is refused.** Start Postgres with
+`pnpm dev:up` and check that `.env.local` points at the right port.
