@@ -11,8 +11,7 @@ async function listMessagesHandler(_ctx: {
 }): Promise<Response> {
 	const db = getDb();
 
-	// No database declared yet. Report that plainly rather than failing — the
-	// page renders and says so.
+	// Return an explicit no-database state so the page can show setup guidance.
 	if (!db) {
 		return Response.json(
 			{
@@ -34,9 +33,7 @@ async function listMessagesHandler(_ctx: {
 		{
 			messages,
 			databaseConfigured: true,
-			// Surfaced so the page can display which stage it is running as.
-			// dev resolves this to the workspace dev domain, qa to a stable
-			// origin from workspace env — the visible half of the profile diff.
+			// The page displays the configured application origin.
 			appBaseUrl: process.env.APP_BASE_URL ?? "(unset)",
 		},
 		{ headers: NO_STORE },
@@ -50,7 +47,7 @@ async function createMessageHandler(ctx: {
 
 	if (!db) {
 		return Response.json(
-			{ error: "No database is configured for this landscape." },
+			{ error: "Database not configured for this landscape." },
 			{ status: 503, headers: NO_STORE },
 		);
 	}

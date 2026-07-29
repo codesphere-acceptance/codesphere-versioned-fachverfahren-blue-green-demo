@@ -14,9 +14,8 @@ interface ListResponse {
 	appBaseUrl: string;
 }
 
-// Data is fetched from /api/messages on the client rather than through an SSR
-// loader. The demo is about the platform, and a plain fetch is one less moving
-// part to explain — and one less thing to fail on stage.
+// Fetch messages on the client so the page can render even when the database
+// is not configured yet.
 function Home() {
 	const [messages, setMessages] = useState<MessageView[]>([]);
 	const [appBaseUrl, setAppBaseUrl] = useState("");
@@ -60,36 +59,36 @@ function Home() {
 
 	return (
 		<main>
-			<h1>Messages</h1>
+			<h1>Landscape messages</h1>
 			<p className="origin">{appBaseUrl}</p>
 
 			<form onSubmit={handleSubmit}>
 				<input
-					aria-label="Message"
+					aria-label="Message text"
 					value={body}
 					onChange={(event) => setBody(event.target.value)}
 					placeholder={
-						hasDatabase ? "Say something…" : "No database configured"
+						hasDatabase ? "Write a short message" : "Database not configured"
 					}
 					disabled={!hasDatabase}
 				/>
 				<button type="submit" disabled={!hasDatabase}>
-					Post
+					Save message
 				</button>
 			</form>
 
 			{error ? <p className="error">{error}</p> : null}
 
 			{loading ? (
-				<p>Loading…</p>
+				<p>Loading messages...</p>
 			) : !hasDatabase ? (
-				// The "before" state of the demo: the application runs, and says
-				// exactly what it is missing. Declaring a postgres block in
-				// ci.yml and syncing is what makes this panel disappear.
+				// Show setup guidance instead of an empty list when persistence is
+				// unavailable.
 				<p className="notice">
-					<strong>No database configured.</strong> This landscape has no{" "}
-					<code>postgres</code> service declared, so there is nowhere to store
-					messages. Add one to <code>ci.yml</code> and sync.
+					<strong>Database not configured.</strong> This landscape does not
+					declare a <code>postgres</code> service yet, so messages cannot be
+					stored. Add the service to <code>ci.yml</code>, then sync the
+					landscape.
 				</p>
 			) : (
 				<ul>

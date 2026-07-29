@@ -6,14 +6,13 @@ export const Route = createRootRoute({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "Codesphere Demo App" },
+			{ title: "Codesphere Platform Demo" },
 		],
 	}),
 	shellComponent: RootDocument,
 });
 
-// Styles are inline and minimal on purpose. The demo is about the platform,
-// not the design system — anything more competes for attention on a projector.
+// Inline styles keep the standalone app self-contained.
 const STYLES = `
   :root { color-scheme: light dark; }
   body {
@@ -41,7 +40,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 		<html lang="en">
 			<head>
 				<HeadContent />
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline styles keep the demo dependency-free */}
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline styles keep the app dependency-free */}
 				<style dangerouslySetInnerHTML={{ __html: STYLES }} />
 			</head>
 			<body>

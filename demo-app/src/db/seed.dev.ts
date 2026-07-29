@@ -4,8 +4,8 @@ import { messagesTable } from "./schema";
 // Runs only when SEED_DEV=1, which ci.dev.yml sets and ci.qa.yml does not.
 // That single flag is one of the three differences between the two profiles.
 const SEED_MESSAGES = [
-	{ body: "This environment came from a file in Git." },
-	{ body: "Nobody filed a ticket to provision the database." },
+	{ body: "This workspace was configured from versioned code." },
+	{ body: "The database was added from the landscape file." },
 ];
 
 async function main(): Promise<void> {

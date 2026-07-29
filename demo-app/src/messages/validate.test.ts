@@ -17,16 +17,8 @@ describe("validateMessageBody", () => {
 		expect(validateMessageBody(null).ok).toBe(false);
 	});
 
-	// ---------------------------------------------------------------------
-	// THE BREAKABLE TEST.
-	//
-	// This is the one to break on stage for the [+EXT] prepare-gate beat.
-	// Change MAX_BODY_LENGTH in validate.ts from 280 to 100 and this fails,
-	// `prepare` stops, and the deploy never happens.
-	//
-	// It is last so the earlier assertions still pass — the failure output
-	// stays short and legible on a projector.
-	// ---------------------------------------------------------------------
+	// Keep the configured message length explicit. If the limit changes, this
+	// test fails before the app accepts a different contract.
 	it("rejects a message longer than the limit", () => {
 		expect(MAX_BODY_LENGTH).toBe(280);
 		expect(validateMessageBody("x".repeat(MAX_BODY_LENGTH)).ok).toBe(true);
