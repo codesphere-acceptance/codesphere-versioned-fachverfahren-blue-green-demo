@@ -360,7 +360,7 @@ codesphere:
                     requests:
                         cpu: 0
                         memory: 0
-    openBao: #optional sectoin
+    openBao: # //TODO optional section
         engine: cs-secrets-engine
         uri: "" # the ULR of your openbao server
         user: codesphere
