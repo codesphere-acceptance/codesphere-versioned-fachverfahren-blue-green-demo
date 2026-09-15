@@ -85,8 +85,16 @@ if [ -n "${GITHUB_REPO:-}" ]; then
 	GH_REPO_ARGS=(-R "$GITHUB_REPO")
 fi
 
-gh repo view "${GH_REPO_ARGS[@]+"${GH_REPO_ARGS[@]}"}" >/dev/null 2>&1 \
-	|| fail "gh could not resolve the target repository. Set GITHUB_REPO in '$ENV_FILE' (owner/name) or run this from inside the repo."
+# `gh repo view` is the one gh subcommand that takes the repo as a positional
+# argument instead of via -R/--repo (unlike gh secret/variable set below), so
+# it needs its own branch here rather than reusing GH_REPO_ARGS.
+if [ -n "${GITHUB_REPO:-}" ]; then
+	gh repo view "$GITHUB_REPO" >/dev/null 2>&1 \
+		|| fail "gh could not resolve repository '$GITHUB_REPO' (from GITHUB_REPO in '$ENV_FILE'). Check the owner/name and that gh has access to it."
+else
+	gh repo view >/dev/null 2>&1 \
+		|| fail "gh could not resolve the target repository from the current git remote. Set GITHUB_REPO in '$ENV_FILE' (owner/name) or run this from inside the repo."
+fi
 
 # ---------------------------------------------------------------------------
 # 3. Validate the Codesphere token and resolve the team id
