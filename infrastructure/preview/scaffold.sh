@@ -127,7 +127,11 @@ setup_github() {
 
 	CS_API_ORIGIN="${CS_API%/api}"
 
-	printf '%s' "$CS_TOKEN" | gh secret set CS_TOKEN "${GH_REPO_ARGS[@]+"${GH_REPO_ARGS[@]}"}" --body - \
+	# Read the secret from stdin by omitting --body. Do NOT write `--body -`:
+	# gh treats the argument to --body as a literal value (it has no stdin
+	# sentinel), so `--body -` silently stores the single character "-" and
+	# ignores the piped token. Piping with no --body flag is the correct way.
+	printf '%s' "$CS_TOKEN" | gh secret set CS_TOKEN "${GH_REPO_ARGS[@]+"${GH_REPO_ARGS[@]}"}" \
 		|| fail "Failed to set GitHub secret CS_TOKEN. Check gh permissions on this repo."
 
 	gh variable set CS_TEAM_NAME "${GH_REPO_ARGS[@]+"${GH_REPO_ARGS[@]}"}" --body "$CS_TEAM_NAME" \
