@@ -9,6 +9,9 @@
 node_modules/
 .pnpm-store/
 
+# direnv cache (.envrc itself is committed and safe)
+.direnv/
+
 # Editor / IDE
 .vscode/
 

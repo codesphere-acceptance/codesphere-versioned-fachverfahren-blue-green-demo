@@ -25,12 +25,30 @@ The Codesphere landscapes use `ci.dev.yml`, `ci.qa.yml`, and
 
 ### Prerequisites
 
-- Node `22.22.x`, pinned in `.mise.toml` and required by `package.json`.
-- pnpm `9.15.9`, available through `corepack enable` or mise.
-- Docker, used only for the local Postgres database.
+Only three things need to exist on your machine before mise takes over:
 
-With [mise](https://mise.jdx.dev/) installed, run `mise trust` and
-`mise install` to install the pinned Node and pnpm versions.
+- [mise](https://mise.jdx.dev/) — manages Node `22.22.2`, pnpm `9.15.9`, `jq`,
+  and `gh`, all pinned in `.mise.toml`. Nothing else needs to be
+  brew/apt-installed for local dev or for `infrastructure/preview/scaffold.sh`.
+- [direnv](https://direnv.net/) — auto-activates the mise toolchain (and
+  loads `demo-app/.env.local` if present) whenever you `cd` into the repo,
+  via the committed `.envrc`.
+- Docker (with the Compose v2 plugin) — used only for the local Postgres
+  database. This is the one dependency mise/direnv can't provide; everything
+  else in this repo assumes it's already running.
+
+Install mise and direnv once, then from the repo root:
+
+```bash
+direnv allow   # trust .envrc — activates the pinned toolchain from here on
+mise install   # fetch node, pnpm, jq, gh at the pinned versions
+mise run doctor
+```
+
+`mise run doctor` (`infrastructure/dev/doctor.sh`) checks every dependency
+above — pinned tool versions, direnv activation, and the Docker daemon — and
+prints a specific, actionable message for anything missing before you go any
+further.
 
 ### First-Time Setup
 
@@ -43,8 +61,8 @@ pnpm db:seed:dev     # optional sample messages
 pnpm dev             # start the app at http://localhost:3000
 ```
 
-With mise, `mise run setup` runs install, starts Postgres, and applies
-migrations. Then run `mise run dev`.
+With mise, `mise run setup` runs `doctor` first, then install, starts
+Postgres, and applies migrations. Then run `mise run dev`.
 
 `demo-app/.env.local` is gitignored. It provides `DATABASE_URL` and
 `APP_BASE_URL` for local app and Drizzle CLI commands.
@@ -101,6 +119,9 @@ http://localhost:3000/api/health/live.
 
 ### Troubleshooting
 
+**Not sure what's missing?** Run `mise run doctor` — it checks mise, direnv,
+pinned tool versions, and the Docker daemon in one pass.
+
 **Port 5433 is already in use.** Another local Postgres container may be using
 the port. Stop that container or override the host port:
 
@@ -142,8 +163,9 @@ GitHub or Codesphere UIs by hand.
    # edit infrastructure/preview/preview.env: set CS_TOKEN and CS_TEAM_NAME at minimum
    ```
 
-4. Run the scaffolding script (requires `gh` authenticated, plus `curl`,
-   `jq`, `openssl`):
+4. Run the scaffolding script (requires `gh` authenticated — `gh auth login`
+   — plus `curl` and `openssl`, both system-provided; `gh` and `jq` come from
+   mise, see Prerequisites above, and `mise run doctor` checks all of it):
 
    ```bash
    bash infrastructure/preview/scaffold.sh
