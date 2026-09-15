@@ -9,8 +9,11 @@ development and QA setup.
 - `ci.dev.yml` and `ci.qa.yml`: Codesphere landscape definitions. The dev
   profile runs Vite with hot reload; the QA profile builds and serves the
   compiled app.
-- `infrastructure/`: Local Postgres setup for development and the Codesphere
-  startup script used by deployed landscapes.
+- `infrastructure/`: Local Postgres setup for development, the Codesphere
+  startup script used by deployed landscapes, and the preview-deployment
+  scaffolding script (`infrastructure/preview/`).
+- `.github/workflows/preview-deployment.yml`: Creates a Codesphere preview
+  workspace per pull request and tears it down on close.
 
 ## Local Development
 
@@ -112,3 +115,50 @@ Docker Desktop or the Docker daemon.
 
 **Migrations fail or connection is refused.** Start Postgres with
 `pnpm dev:up` and check that `.env.local` points at the right port.
+
+## Preview Deployments
+
+Every pull request gets its own Codesphere workspace, deployed from
+`ci.dev.yml` (Vite dev server, hot reload, seeded sample data). The workspace
+is created on PR open/sync and deleted when the PR is closed or merged. See
+`.github/workflows/preview-deployment.yml`.
+
+### One-time setup
+
+The workflow needs a GitHub secret, two GitHub variables, and a Codesphere
+team shared vault. `infrastructure/preview/scaffold.sh` provisions all of it
+from one local, gitignored env file — you do not need to click through the
+GitHub or Codesphere UIs by hand.
+
+1. Create a Codesphere **service account** (a dedicated machine user, e.g.
+   `devops+ci@yourdomain.com`), invite it to your target team, and connect it
+   to this GitHub repository with Git permissions.
+2. Generate an API token for that service account: Codesphere > Account
+   Settings > API Keys.
+3. Copy the env template and fill it in:
+
+   ```bash
+   cp infrastructure/preview/preview.env.example infrastructure/preview/preview.env
+   # edit infrastructure/preview/preview.env: set CS_TOKEN and CS_TEAM_NAME at minimum
+   ```
+
+4. Run the scaffolding script (requires `gh` authenticated, plus `curl`,
+   `jq`, `openssl`):
+
+   ```bash
+   bash infrastructure/preview/scaffold.sh
+   ```
+
+   This sets the GitHub secret `CS_TOKEN` and variables `CS_TEAM_NAME`,
+   `CS_SHARED_VAULT`, `CODESPHERE_INSTANCE_URL`; creates the Codesphere team
+   shared vault named by `CS_SHARED_VAULT` if it does not exist; and stores
+   the `POSTGRES_PASSWORD` / `POSTGRES_SUPERUSER_PASSWORD` secrets that
+   `ci.dev.yml` references (generating strong random values if you left them
+   blank in `preview.env`). It is safe to re-run — existing values are left
+   alone unless you set `FORCE=1`.
+5. Open a pull request. The workflow validates all of the above (failing
+   with a clear error if anything is missing or invalid) before deploying,
+   then posts the preview link on the PR.
+
+`infrastructure/preview/preview.env` holds a live API token — never commit
+it (it is already gitignored).
