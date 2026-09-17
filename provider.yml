@@ -140,7 +140,7 @@ versions:
       - Mandantenname als Pflichtkonfiguration
   1.2.0:
     ciProfile: qa
-    gitRef: v1.2.0
+    gitRef: v1.20
     appVersion: Mitteilungsdienst 1.2.0
     description: |
       Minor-Release, koexistiert mit 1.0.0 und 1.1.0.
