@@ -146,3 +146,9 @@ versions:
       Minor-Release, koexistiert mit 1.0.0 und 1.1.0.
       - End-to-End-Test der automatischen Release-Tag-Erzeugung im register-Job
       - Release-Tags werden beim Merge automatisch erzeugt (sync-release-tags.sh)
+  1.2.1:
+    ciProfile: qa
+    gitRef: v1.2.1
+    appVersion: Mitteilungsdienst 1.2.1
+    description: |
+      Bugfix-Release: Dependency bump
