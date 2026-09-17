@@ -35,7 +35,7 @@ set +a
 gh auth status >/dev/null 2>&1 || fail "gh is not authenticated. Run 'gh auth login' (or 'gh auth refresh -h github.com')."
 
 [ -n "${CS_TOKEN:-}" ]    || fail "CS_TOKEN is empty in '$ENV_FILE'."
-[ -n "${CS_TEAM_IDS:-}" ] || fail "CS_TEAM_IDS is empty in '$ENV_FILE' — the provider must be org-scoped (A6)."
+[ -n "${CS_TEAM_IDS:-}" ] || fail "CS_TEAM_IDS is empty in '$ENV_FILE' — the provider must be org-scoped."
 CS_API="${CS_API:-https://cloud.codesphere.com/api}"
 CS_API_ORIGIN="${CS_API%/api}"
 

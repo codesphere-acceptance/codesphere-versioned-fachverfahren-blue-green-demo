@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Codesphere Marketplace catalogue client for the Fachverfahren provider.
 #
-# Wraps the managed-services Public API so the ATS-08 lifecycle can be driven
+# Wraps the managed-services Public API so the catalogue lifecycle can be driven
 # from the CLI or the catalogue pipeline (.github/workflows/catalogue.yml):
 #
-#   validate   Parse + policy-check provider.yml locally (no network).   (8.6)
-#   publish    Upsert the provider via PUT (register / update).          (8.5, 8.9)
-#   list       GET providers visible to a team (visibility check).       (8.8, 8.10)
-#   delete     DELETE the provider (de-register / de-provision).         (8.11, 8.12)
+#   validate   Parse + policy-check provider.yml locally (no network).
+#   publish    Upsert the provider via PUT (register / update).
+#   list       GET providers visible to a team (visibility check).
+#   delete     DELETE the provider (de-register / de-provision).
 #
 # Config comes from infrastructure/catalogue/catalogue.env (see
 # catalogue.env.example) or the process environment. Idempotent by design:
@@ -51,7 +51,7 @@ NODE
 }
 
 # ---------------------------------------------------------------------------
-# validate — local policy gate (the "verification pipeline", ATS-08 step 8.6)
+# validate — local policy gate (the "verification pipeline")
 # ---------------------------------------------------------------------------
 validate() {
   need node
@@ -102,13 +102,13 @@ load_env_and_preflight() {
 }
 
 # ---------------------------------------------------------------------------
-# publish — idempotent upsert (ATS-08 steps 8.5 / 8.9, criteria A1/A2/A4)
+# publish — idempotent upsert (register / update)
 # ---------------------------------------------------------------------------
 publish() {
   validate
   load_env_and_preflight
 
-  [ -n "${CS_TEAM_IDS:-}" ] || fail "CS_TEAM_IDS is empty. Org-scope the provider to at least one team (ATS-08 step 8.4 / A6)."
+  [ -n "${CS_TEAM_IDS:-}" ] || fail "CS_TEAM_IDS is empty. Org-scope the provider to at least one team."
 
   # Build scope { type: team, teamIds: [ ... ] } from the comma list.
   local team_ids_json
@@ -117,7 +117,7 @@ publish() {
   # Two ways to publish (Codesphere supports both):
   #   git  (default) — Codesphere fetches provider.yml from GIT_URL@GIT_REF.
   #                    Requires the token user's Git connection to reach the
-  #                    repo. This is the ATS-08 / pipeline path (A14).
+  #                    repo. This is the default CI/CD pipeline path.
   #   spec           — send the full provider definition inline, read from the
   #                    local provider.yml. No Git connection needed; handy for
   #                    local trials before the repo is wired up.
@@ -165,7 +165,7 @@ NODE
 }
 
 # ---------------------------------------------------------------------------
-# list — visibility check (ATS-08 steps 8.8 / 8.10, criteria A6/A38)
+# list — visibility check (UI + API)
 # ---------------------------------------------------------------------------
 list() {
   load_env_and_preflight
@@ -196,7 +196,7 @@ list() {
 }
 
 # ---------------------------------------------------------------------------
-# delete — de-register / de-provision (ATS-08 steps 8.11 / 8.12, A1/A4)
+# delete — de-register / de-provision
 # ---------------------------------------------------------------------------
 delete() {
   load_env_and_preflight

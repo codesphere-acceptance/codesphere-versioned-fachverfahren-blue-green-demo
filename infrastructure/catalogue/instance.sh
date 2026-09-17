@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Consumer-side lifecycle for a deployed instance of the Fachverfahren managed
 # service — the counterpart to provider.sh (which is the vendor/catalogue side).
-# Exercises ATS-08 steps 8.7 (deploy an instance) and 8.9 (bump its version):
+# Covers instance deployment and version bumps:
 #
-#   create           Deploy an instance from the catalogue in a team.        (8.7)
+#   create           Deploy an instance from the catalogue in a team.
 #   list             List a team's managed-service instances.
 #   status <id>      Show one instance (state, version, hostname).
-#   bump <id> <ver>  Change a running instance's version (upgrade/downgrade).  (8.9)
+#   bump <id> <ver>  Change a running instance's version (upgrade/downgrade).
 #   delete <id>      Remove one instance (not used in the happy-path demo).
 #
 # Config comes from infrastructure/catalogue/catalogue.env (CS_TOKEN, CS_API)

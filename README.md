@@ -1,4 +1,4 @@
-# Versioned Fachverfahren — Codesphere Marketplace Demo (ATS-08)
+# Versioned Fachverfahren — Codesphere Marketplace Demo
 
 A curated, versioned **Fachverfahren** published as a Codesphere *managed
 service*. The repository is two things at once:
@@ -10,12 +10,12 @@ service*. The repository is two things at once:
    versioned, org-scoped, priced entry in the Codesphere Marketplace, published
    and de-provisioned through the Codesphere Public API by a CI/CD pipeline.
 
-Together they demonstrate the full ATS-08 lifecycle: a vendor onboards a
+Together they demonstrate the full catalogue lifecycle: a vendor onboards a
 Fachverfahren as a curated managed service via a PR that runs an automated
 verification pipeline, resulting in an org-scoped catalogue entry visible in the
 UI and the public API but invisible to other tenants; a newer version coexists
 with the old; and the service can later be removed and de-provisioned. See
-[Fachverfahren Catalogue (ATS-08)](#fachverfahren-catalogue-ats-08).
+[Fachverfahren Catalogue](#fachverfahren-catalogue).
 
 ## Contents
 
@@ -159,7 +159,7 @@ Docker Desktop or the Docker daemon.
 **Migrations fail or connection is refused.** Start Postgres with
 `pnpm dev:up` and check that `.env.local` points at the right port.
 
-## Fachverfahren Catalogue (ATS-08)
+## Fachverfahren Catalogue
 
 `provider.yml` is the curated catalogue entry; `infrastructure/catalogue/provider.sh`
 and `.github/workflows/catalogue.yml` drive its lifecycle through the Codesphere
@@ -167,43 +167,43 @@ managed-services Public API.
 
 ### How the pieces map to the platform
 
-- **Curated entry with commercial terms (A2).** `provider.yml` carries the
+- **Curated entry with commercial terms.** `provider.yml` carries the
   usual metadata *and* the pricing model as an OpenAPI vendor extension,
   `configSchema.x-pricing` (mirrored human-readably into `description`).
   Codesphere validates the definition against a strict schema, so custom data
   lives in an `x-` extension — the same mechanism used by `x-update-constraint`
   and `x-endpoint` — rather than an unknown top-level key.
-- **Coexisting versions (A1, A7).** The `versions` map declares `1.0.0` and
+- **Coexisting versions.** The `versions` map declares `1.0.0` and
   `1.1.0`, each pinned to its own release tag and `ciProfile`. Versions are
   append-only in Codesphere: publishing `1.1.0` adds it next to `1.0.0` instead
   of replacing it, so live instances keep running and new ones (or upgrades)
   can pick the newer version.
-- **Org scope / tenant separation (A6).** Scope is *not* part of `provider.yml`
+- **Org scope / tenant separation.** Scope is *not* part of `provider.yml`
   — Codesphere takes `scope` in the publish request. The pipeline applies
   `scope: { type: team, teamIds: [...] }` from `CS_TEAM_IDS`, so the entry is
   visible only inside the vendor org.
-- **Verification pipeline (A20).** Every PR touching `provider.yml` runs
+- **Verification pipeline.** Every PR touching `provider.yml` runs
   `provider.sh validate` (the `verify` job) — a no-network policy gate that
   rejects a broken curated entry before it can reach the catalogue.
-- **Two role-appropriate interfaces (A13, A38).** The same entry is visible in
+- **UI and API visibility.** The same entry is visible in
   the Marketplace UI and returned by `GET /managed-services/providers` (surfaced
   by `provider.sh list`).
 
-### Step-by-step (ATS-08 8.1–8.12)
+### Step-by-step
 
 | Step | Do this | Command / place |
 | --- | --- | --- |
-| 8.2 add pricing field | edit `configSchema.x-pricing` | `provider.yml` |
-| 8.3 bump version | add a higher entry to `versions` | `provider.yml` |
-| 8.4 set org scope | set the target team id(s) | `CS_TEAM_IDS` (publish request, not the file) |
-| 8.5 add to catalogue | open a PR, then merge | `catalogue.yml` → `verify`, then `register` (upsert) |
-| 8.6 verification pipeline | automatic on PR | `provider.sh validate` |
-| 8.7 deploy an instance | create a managed-service instance in a team | Codesphere UI · `instance.sh create` |
-| 8.8 show in UI + API | list providers for the org team | Marketplace UI · `provider.sh list` |
-| 8.9 bump an instance | move a running instance to `1.1.0` | Codesphere UI (service → version) · `instance.sh bump` |
-| 8.10 cross-tenant check | list as a different team | `CS_QUERY_TEAM_ID` = another team → `provider.sh list` |
-| 8.11 remove via PR | delete `provider.yml`, merge | `catalogue.yml` → `register` (delete) |
-| 8.12 confirm gone | list again; check instances | `provider.sh list` (UI + API) |
+| add pricing field | edit `configSchema.x-pricing` | `provider.yml` |
+| bump version | add a higher entry to `versions` | `provider.yml` |
+| set org scope | set the target team id(s) | `CS_TEAM_IDS` (publish request, not the file) |
+| add to catalogue | open a PR, then merge | `catalogue.yml` → `verify`, then `register` (upsert) |
+| verification pipeline | automatic on PR | `provider.sh validate` |
+| deploy an instance | create a managed-service instance in a team | Codesphere UI · `instance.sh create` |
+| show in UI + API | list providers for the org team | Marketplace UI · `provider.sh list` |
+| bump an instance | move a running instance to `1.1.0` | Codesphere UI (service → version) · `instance.sh bump` |
+| cross-tenant check | list as a different team | `CS_QUERY_TEAM_ID` = another team → `provider.sh list` |
+| remove via PR | delete `provider.yml`, merge | `catalogue.yml` → `register` (delete) |
+| confirm gone | list again; check instances | `provider.sh list` (UI + API) |
 
 Each entry in `versions` pins a **release tag** (`v1.0.0`, `v1.1.0`). Registering
 the provider only stores metadata, but deploying or bumping an instance to a
@@ -231,7 +231,7 @@ It sets:
 
 - secret `CS_TOKEN` — Codesphere API token of the publishing (technical) user.
   Its Git connection is used to pull this repo, so it must have access.
-- variable `CS_TEAM_IDS` — comma-separated team ids to scope the provider to (A6).
+- variable `CS_TEAM_IDS` — comma-separated team ids to scope the provider to.
 - variable `CS_QUERY_TEAM_ID` — a team id used for `list` visibility checks; set
   it to a team **outside** `CS_TEAM_IDS` to demonstrate the cross-tenant check.
 - variable `CODESPHERE_INSTANCE_URL` — API origin; defaults to
