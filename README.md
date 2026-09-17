@@ -219,7 +219,18 @@ git tag v1.1.0 <commit-of-updated-version> && git push origin v1.1.0
 
 ### One-time setup
 
-The catalogue workflow needs one GitHub secret and up to three variables:
+The catalogue workflow needs one GitHub secret and up to three variables.
+`infrastructure/catalogue/scaffold.sh` provisions all of them from `catalogue.env`
+(the same file `provider.sh` uses), mirroring the preview scaffold:
+
+```bash
+cp infrastructure/catalogue/catalogue.env.example infrastructure/catalogue/catalogue.env
+# edit catalogue.env: CS_TOKEN, CS_TEAM_IDS, CS_QUERY_TEAM_ID, CS_API
+gh auth login                                   # needs repo scope
+bash infrastructure/catalogue/scaffold.sh
+```
+
+It sets:
 
 - secret `CS_TOKEN` — Codesphere API token of the publishing (technical) user.
   Its Git connection is used to pull this repo, so it must have access.
