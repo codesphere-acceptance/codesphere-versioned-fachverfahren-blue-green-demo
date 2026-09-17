@@ -72,6 +72,10 @@ run:
       POSTGRES_DB: demo_app
       NODE_ENV: production
       PORT: "3000"
+      # Provider configSchema value (TENANT_NAME) surfaced to the app when this
+      # landscape is deployed as a managed service. Unset for a plain qa deploy;
+      # the app treats an empty/unresolved value as "no tenant" (see version.ts).
+      TENANT_NAME: ${{ workspace.env['TENANT_NAME'] }}
     volumeMounts:
       - name: _workspace
         mountPath: /home/user/app

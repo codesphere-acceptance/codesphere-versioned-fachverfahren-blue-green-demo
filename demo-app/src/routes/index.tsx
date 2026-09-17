@@ -12,6 +12,8 @@ interface ListResponse {
 	messages: MessageView[];
 	databaseConfigured: boolean;
 	appBaseUrl: string;
+	appVersion: string;
+	tenantName: string | null;
 }
 
 // Fetch messages on the client so the page can render even when the database
@@ -19,6 +21,8 @@ interface ListResponse {
 function Home() {
 	const [messages, setMessages] = useState<MessageView[]>([]);
 	const [appBaseUrl, setAppBaseUrl] = useState("");
+	const [appVersion, setAppVersion] = useState("");
+	const [tenantName, setTenantName] = useState<string | null>(null);
 	const [hasDatabase, setHasDatabase] = useState(true);
 	const [body, setBody] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -29,6 +33,8 @@ function Home() {
 		const data = (await response.json()) as ListResponse;
 		setMessages(data.messages);
 		setAppBaseUrl(data.appBaseUrl);
+		setAppVersion(data.appVersion);
+		setTenantName(data.tenantName);
 		setHasDatabase(data.databaseConfigured);
 		setLoading(false);
 	}, []);
@@ -61,6 +67,17 @@ function Home() {
 		<main>
 			<h1>Landscape messages</h1>
 			<p className="origin">{appBaseUrl}</p>
+			{appVersion ? (
+				<p className="meta">
+					Version <strong>{appVersion}</strong>
+					{tenantName ? (
+						<>
+							{" "}
+							· Mandant: <strong>{tenantName}</strong>
+						</>
+					) : null}
+				</p>
+			) : null}
 
 			<form onSubmit={handleSubmit}>
 				<input

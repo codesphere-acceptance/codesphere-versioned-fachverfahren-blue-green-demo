@@ -3,6 +3,7 @@ import { desc } from "drizzle-orm";
 import { getDb } from "#/db/client";
 import { messagesTable } from "#/db/schema";
 import { validateMessageBody } from "#/messages/validate";
+import { APP_VERSION, resolveTenantName } from "#/version";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -18,6 +19,8 @@ async function listMessagesHandler(_ctx: {
 				messages: [],
 				databaseConfigured: false,
 				appBaseUrl: process.env.APP_BASE_URL ?? "(unset)",
+				appVersion: APP_VERSION,
+				tenantName: resolveTenantName(),
 			},
 			{ headers: NO_STORE },
 		);
@@ -33,8 +36,11 @@ async function listMessagesHandler(_ctx: {
 		{
 			messages,
 			databaseConfigured: true,
-			// The page displays the configured application origin.
+			// The page displays the configured application origin, the deployed
+			// version, and the tenant this instance runs for.
 			appBaseUrl: process.env.APP_BASE_URL ?? "(unset)",
+			appVersion: APP_VERSION,
+			tenantName: resolveTenantName(),
 		},
 		{ headers: NO_STORE },
 	);
