@@ -71,12 +71,21 @@ load_env_and_preflight() {
   need jq
 
   # An env file is convenient locally; CI passes the same variables through the
-  # process environment instead. Require one or the other.
+  # process environment instead. Require one or the other. A value already
+  # present in the environment wins over the file, so any knob can be overridden
+  # inline, e.g.  CS_QUERY_TEAM_ID=92 provider.sh list
+  local knobs="CS_TOKEN CS_API CS_TEAM_IDS CS_QUERY_TEAM_ID GIT_URL GIT_REF PROVIDER_FILE PUBLISH_METHOD"
   if [ -f "$ENV_FILE" ]; then
+    local v
+    for v in $knobs; do eval "_pre_$v=\${$v:-}"; done
     set -a
     # shellcheck disable=SC1090
     source "$ENV_FILE"
     set +a
+    for v in $knobs; do
+      local pre="_pre_$v"
+      [ -n "${!pre:-}" ] && eval "$v=\${$pre}"
+    done
   elif [ -z "${CS_TOKEN:-}" ]; then
     fail "no env file at '$ENV_FILE' and CS_TOKEN is not set. Copy catalogue.env.example to catalogue.env, or export the variables (as the pipeline does)."
   fi
