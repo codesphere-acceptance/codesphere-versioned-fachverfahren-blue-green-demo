@@ -7,7 +7,7 @@ import * as schema from "./schema";
 // a clear setup state.
 //
 // DATABASE_URL is assembled by infrastructure/codesphere/start-app.sh from
-// POSTGRES_* variables in ci.dev.yml / ci.qa.yml, or locally from .env.local.
+// POSTGRES_* variables in ci.qa.yml, or locally from .env.local.
 function createDb() {
 	const connectionString = process.env.DATABASE_URL;
 

@@ -3,9 +3,9 @@
 A curated, versioned **Fachverfahren** published as a Codesphere *managed
 service*. The repository is two things at once:
 
-1. **A deployable landscape** — a small TanStack Start application with
-   Codesphere landscape definitions (`ci.dev.yml` / `ci.qa.yml`). This is the
-   workload that actually runs.
+1. **A deployable landscape** — a small TanStack Start application with a
+   Codesphere landscape definition (`ci.qa.yml`). This is the workload that
+   actually runs.
 2. **A curated catalogue entry** — `provider.yml` turns that landscape into a
    versioned, org-scoped, priced entry in the Codesphere Marketplace, published
    and de-provisioned through the Codesphere Public API by a CI/CD pipeline.
@@ -25,27 +25,24 @@ with the old; and the service can later be removed and de-provisioned. See
   landscape `gitRef` + `ciProfile`).
 - `demo-app/`: TanStack Start application using Drizzle ORM and Postgres — the
   landscape workload the provider deploys.
-- `ci.dev.yml` and `ci.qa.yml`: Codesphere landscape definitions. The dev
-  profile runs Vite with hot reload; the QA profile builds and serves the
-  compiled app.
+- `ci.qa.yml`: The Codesphere landscape definition — builds and serves the
+  compiled app. Each provider version deploys this landscape.
 - `infrastructure/catalogue/`: The catalogue client (`provider.sh`:
-  validate / publish / list / delete against the managed-services API) and the
-  local policy gate (`validate-provider.mjs`).
-- `infrastructure/`: Local Postgres setup for development, the Codesphere
-  startup script used by deployed landscapes, and the preview-deployment
-  scaffolding script (`infrastructure/preview/`).
+  validate / publish / list / delete against the managed-services API), the
+  local policy gate (`validate-provider.mjs`), and the consumer-side instance
+  driver (`instance.sh`: create / bump / delete a deployed instance).
+- `infrastructure/`: Local Postgres setup for development (`infrastructure/dev/`)
+  and the Codesphere startup script used by deployed landscapes
+  (`infrastructure/codesphere/`).
 - `.github/workflows/catalogue.yml`: Verifies `provider.yml` on every PR and
   registers / de-registers the provider via the Public API on merge.
-- `.github/workflows/preview-deployment.yml`: Creates a Codesphere preview
-  workspace per pull request and tears it down on close (the ATS-03 deployment
-  cross-reference).
 
 ## Local Development
 
 Local development runs the app on your machine. Docker Compose provides the
 Postgres database, and Vite serves the app in development mode.
 
-The Codesphere landscapes use `ci.dev.yml`, `ci.qa.yml`, and
+The Codesphere landscape uses `ci.qa.yml` and
 `infrastructure/codesphere/start-app.sh` instead of the local `.env.local` file.
 
 ### Prerequisites
@@ -54,7 +51,7 @@ Only three things need to exist on your machine before mise takes over:
 
 - [mise](https://mise.jdx.dev/) — manages Node `22.22.2`, pnpm `9.15.9`, `jq`,
   and `gh`, all pinned in `.mise.toml`. Nothing else needs to be
-  brew/apt-installed for local dev or for `infrastructure/preview/scaffold.sh`.
+  brew/apt-installed for local dev or for `infrastructure/catalogue/scaffold.sh`.
 - [direnv](https://direnv.net/) — auto-activates the mise toolchain (and
   loads `demo-app/.env.local` if present) whenever you `cd` into the repo,
   via the committed `.envrc`.
@@ -201,9 +198,9 @@ managed-services Public API.
 | 8.4 set org scope | set the target team id(s) | `CS_TEAM_IDS` (publish request, not the file) |
 | 8.5 add to catalogue | open a PR, then merge | `catalogue.yml` → `verify`, then `register` (upsert) |
 | 8.6 verification pipeline | automatic on PR | `provider.sh validate` |
-| 8.7 deployment (ATS-03) | preview deploy of a version | `preview-deployment.yml` |
+| 8.7 deploy an instance | create a managed-service instance in a team | Codesphere UI · `instance.sh create` |
 | 8.8 show in UI + API | list providers for the org team | Marketplace UI · `provider.sh list` |
-| 8.9 bump an instance | choose `1.1.0` for a running service | Codesphere UI (service → version) |
+| 8.9 bump an instance | move a running instance to `1.1.0` | Codesphere UI (service → version) · `instance.sh bump` |
 | 8.10 cross-tenant check | list as a different team | `CS_QUERY_TEAM_ID` = another team → `provider.sh list` |
 | 8.11 remove via PR | delete `provider.yml`, merge | `catalogue.yml` → `register` (delete) |
 | 8.12 confirm gone | list again; check instances | `provider.sh list` (UI + API) |
@@ -221,7 +218,7 @@ git tag v1.1.0 <commit-of-updated-version> && git push origin v1.1.0
 
 The catalogue workflow needs one GitHub secret and up to three variables.
 `infrastructure/catalogue/scaffold.sh` provisions all of them from `catalogue.env`
-(the same file `provider.sh` uses), mirroring the preview scaffold:
+(the same file `provider.sh` uses):
 
 ```bash
 cp infrastructure/catalogue/catalogue.env.example infrastructure/catalogue/catalogue.env
@@ -238,7 +235,7 @@ It sets:
 - variable `CS_QUERY_TEAM_ID` — a team id used for `list` visibility checks; set
   it to a team **outside** `CS_TEAM_IDS` to demonstrate the cross-tenant check.
 - variable `CODESPHERE_INSTANCE_URL` — API origin; defaults to
-  `https://cloud.codesphere.com` (shared with the preview workflow).
+  `https://cloud.codesphere.com`.
 
 To drive the API locally instead of via CI:
 
@@ -253,51 +250,3 @@ bash infrastructure/catalogue/provider.sh delete      # DELETE — de-provision
 
 `infrastructure/catalogue/catalogue.env` holds a live API token — it is
 gitignored; never commit it.
-
-## Preview Deployments
-
-Every pull request gets its own Codesphere workspace, deployed from
-`ci.dev.yml` (Vite dev server, hot reload, seeded sample data). The workspace
-is created on PR open/sync and deleted when the PR is closed or merged. See
-`.github/workflows/preview-deployment.yml`.
-
-### One-time setup
-
-The workflow needs a GitHub secret, two GitHub variables, and a Codesphere
-team shared vault. `infrastructure/preview/scaffold.sh` provisions all of it
-from one local, gitignored env file — you do not need to click through the
-GitHub or Codesphere UIs by hand.
-
-1. Create a Codesphere **service account** (a dedicated machine user, e.g.
-   `devops+ci@yourdomain.com`), invite it to your target team, and connect it
-   to this GitHub repository with Git permissions.
-2. Generate an API token for that service account: Codesphere > Account
-   Settings > API Keys.
-3. Copy the env template and fill it in:
-
-   ```bash
-   cp infrastructure/preview/preview.env.example infrastructure/preview/preview.env
-   # edit infrastructure/preview/preview.env: set CS_TOKEN and CS_TEAM_NAME at minimum
-   ```
-
-4. Run the scaffolding script (requires `gh` authenticated — `gh auth login`
-   — plus `curl` and `openssl`, both system-provided; `gh` and `jq` come from
-   mise, see Prerequisites above, and `mise run doctor` checks all of it):
-
-   ```bash
-   bash infrastructure/preview/scaffold.sh
-   ```
-
-   This sets the GitHub secret `CS_TOKEN` and variables `CS_TEAM_NAME`,
-   `CS_SHARED_VAULT`, `CODESPHERE_INSTANCE_URL`; creates the Codesphere team
-   shared vault named by `CS_SHARED_VAULT` if it does not exist; and stores
-   the `POSTGRES_PASSWORD` / `POSTGRES_SUPERUSER_PASSWORD` secrets that
-   `ci.dev.yml` references (generating strong random values if you left them
-   blank in `preview.env`). It is safe to re-run — existing values are left
-   alone unless you set `FORCE=1`.
-5. Open a pull request. The workflow validates all of the above (failing
-   with a clear error if anything is missing or invalid) before deploying,
-   then posts the preview link on the PR.
-
-`infrastructure/preview/preview.env` holds a live API token — never commit
-it (it is already gitignored).

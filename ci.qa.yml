@@ -4,8 +4,8 @@
 # Adminer container, all in the same landscape.
 #
 # This is the production path: prepare produces a build, and the run stage
-# serves the compiled Nitro output. ci.dev.yml instead runs the Vite dev server
-# with hot reload — same repository, same landscape shape, different mode.
+# serves the compiled Nitro output. Each provider version (provider.yml) deploys
+# this landscape at its pinned gitRef.
 #
 #   install -> typecheck -> test -> build -> migrate -> start
 #
@@ -64,7 +64,7 @@ run:
       # Derive the app origin from the workspace's own domain. A managed-service
       # instance runs in a fresh, ephemeral workspace where workspace.env has no
       # APP_BASE_URL, so sourcing it from there leaves start-app.sh without a
-      # required value. workspace.devDomain always resolves (same as ci.dev.yml).
+      # required value. workspace.devDomain always resolves for the workspace.
       APP_BASE_URL: https://${{ workspace.devDomain }}
       # Constructed from the service key under run: (the trailing -postgres).
       # Rename the postgres service above and this changes with it.

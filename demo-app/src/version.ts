@@ -9,7 +9,7 @@ export const APP_VERSION = "1.1.0";
 
 // The tenant this instance is operated for. For a managed-service deployment
 // Codesphere injects the provider's TENANT_NAME config value into the landscape
-// (see ci.qa.yml); locally / in previews it is unset.
+// (see ci.qa.yml); locally it is unset.
 export function resolveTenantName(): string | null {
 	const raw = process.env.TENANT_NAME?.trim();
 	// Guard against an unset value or an unresolved Codesphere template.

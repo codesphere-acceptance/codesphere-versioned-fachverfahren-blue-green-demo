@@ -2,9 +2,8 @@
 # IaC for the Fachverfahren catalogue pipeline (.github/workflows/catalogue.yml).
 #
 # Provisions the GitHub repo secret + variables the pipeline needs, from the
-# same gitignored catalogue.env used by provider.sh. Mirrors the preview
-# scaffold (infrastructure/preview/scaffold.sh): idempotent, fails early with a
-# specific message, and never lets the token hit the log.
+# same gitignored catalogue.env used by provider.sh. Idempotent, fails early
+# with a specific message, and never lets the token hit the log.
 #
 # Sets:
 #   secret    CS_TOKEN                  (the publishing user's API token)

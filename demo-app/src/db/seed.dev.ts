@@ -1,8 +1,8 @@
 import { getDb } from "./client";
 import { messagesTable } from "./schema";
 
-// Runs only when SEED_DEV=1, which ci.dev.yml sets and ci.qa.yml does not.
-// That single flag is one of the three differences between the two profiles.
+// Local-only sample data, inserted by `pnpm db:seed:dev` when the messages
+// table is empty. Codesphere landscapes do not run this seed.
 const SEED_MESSAGES = [
 	{ body: "This workspace was configured from versioned code." },
 	{ body: "The database was added from the landscape file." },

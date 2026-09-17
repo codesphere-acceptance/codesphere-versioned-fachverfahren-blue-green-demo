@@ -1,7 +1,7 @@
 # Codesphere Managed Service Provider — curated Fachverfahren catalogue entry.
 #
-# This file turns the landscape in this repository (ci.dev.yml / ci.qa.yml +
-# demo-app) into a *versioned, curated managed service* in the Codesphere
+# This file turns the landscape in this repository (ci.qa.yml + demo-app) into
+# a *versioned, curated managed service* in the Codesphere
 # Marketplace catalogue. The landscape is the deployable workload; this file is
 # the commercial + lifecycle metadata a vendor publishes for it.
 #

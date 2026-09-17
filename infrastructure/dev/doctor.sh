@@ -90,13 +90,13 @@ check_tool_version pnpm "pnpm -v" '[0-9]+\.[0-9]+\.[0-9]+'
 if command -v jq >/dev/null 2>&1; then
 	ok "jq found: $(jq --version 2>/dev/null)"
 else
-	bad "jq not found on PATH. Run 'mise install'. Required by infrastructure/preview/scaffold.sh."
+	bad "jq not found on PATH. Run 'mise install'. Required by the infrastructure/catalogue scripts."
 fi
 
 if command -v gh >/dev/null 2>&1; then
 	ok "gh found: $(gh --version 2>/dev/null | head -n1)"
 else
-	bad "gh not found on PATH. Run 'mise install'. Required by infrastructure/preview/scaffold.sh."
+	bad "gh not found on PATH. Run 'mise install'. Required by infrastructure/catalogue/scaffold.sh."
 fi
 
 echo ""
@@ -118,19 +118,19 @@ else
 fi
 
 echo ""
-echo "== preview scaffolding readiness (optional, only needed for infrastructure/preview/scaffold.sh) =="
+echo "== catalogue tooling readiness (optional, only needed for infrastructure/catalogue scripts) =="
 if command -v gh >/dev/null 2>&1; then
 	if gh auth status >/dev/null 2>&1; then
 		ok "gh is authenticated"
 	else
-		warn "gh is installed but not authenticated. Run 'gh auth login' before running scaffold.sh."
+		warn "gh is installed but not authenticated. Run 'gh auth login' before running infrastructure/catalogue/scaffold.sh."
 	fi
 fi
 for tool in curl openssl; do
 	if command -v "$tool" >/dev/null 2>&1; then
-		ok "$tool found (system-provided, used by scaffold.sh)"
+		ok "$tool found (system-provided, used by the catalogue scripts)"
 	else
-		warn "$tool not found. Required only by infrastructure/preview/scaffold.sh; install via your OS package manager."
+		warn "$tool not found. Required only by the infrastructure/catalogue scripts; install via your OS package manager."
 	fi
 done
 
