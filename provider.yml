@@ -109,9 +109,15 @@ detailsSchema:
       readOnly: true
   additionalProperties: false
 
-# Landscape-based providers don't have configurable plans.
+# Landscape-based providers don't size resources via plans (that comes from the
+# ci profile), but a single default plan (id 0) is required so instances can be
+# created — see nodejs-template. Resource usage follows the qa ci profile.
 resourceParameters: {}
-plans: []
+plans:
+  - id: 0
+    name: Standard
+    description: Ressourcen richten sich nach dem qa-CI-Profil der Landschaft.
+    parameters: {}
 
 # ATS-08 steps 8.3 / 8.9 / A7: two versions that COEXIST. Each pins an exact
 # state of this repo (a release tag) and the ci profile used to deploy it.
