@@ -50,12 +50,16 @@ fi
 
 created=0
 for ref in "${REFS[@]}"; do
-  if git rev-parse -q --verify "refs/tags/$ref^{commit}" >/dev/null 2>&1; then
-    info "tag '$ref' already exists — leaving untouched (released versions are immutable)."
+  # Check the REMOTE authoritatively. A CI checkout is typically shallow and
+  # fetches no tags (fetch-depth: 2, --no-tags), so a local-only check would
+  # wrongly conclude every tag is missing and try to recreate existing ones.
+  if git ls-remote --exit-code --tags origin "refs/tags/$ref" >/dev/null 2>&1; then
+    info "tag '$ref' already exists on origin — leaving untouched (released versions are immutable)."
     continue
   fi
   info "creating tag '$ref' -> $SHA and pushing to origin."
-  git tag "$ref" "$SHA"
+  # Create the local tag only if absent; never move one that already exists.
+  git rev-parse -q --verify "refs/tags/$ref" >/dev/null 2>&1 || git tag "$ref" "$SHA"
   git push origin "refs/tags/$ref"
   created=$((created + 1))
 done
