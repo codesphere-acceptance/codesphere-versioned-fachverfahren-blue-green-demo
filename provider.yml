@@ -1,0 +1,132 @@
+# Codesphere Managed Service Provider — curated Fachverfahren catalogue entry.
+#
+# This file turns the landscape in this repository (ci.dev.yml / ci.qa.yml +
+# demo-app) into a *versioned, curated managed service* in the Codesphere
+# Marketplace catalogue. The landscape is the deployable workload; this file is
+# the commercial + lifecycle metadata a vendor publishes for it.
+#
+# It is a landscape-based provider (backend.landscape.gitUrl points back at this
+# same repo). Published via the Codesphere Public API — see
+# infrastructure/catalogue/provider.sh and .github/workflows/catalogue.yml.
+#
+# NOTE on scope (ATS-08 step 8.4): `scope`/`teamIds` are deliberately NOT in
+# this file. Codesphere takes them in the publish request, not the provider
+# file, so org scoping is applied by the registration pipeline
+# (CS_TEAM_IDS in infrastructure/catalogue/catalogue.env). This keeps the
+# curated definition tenant-agnostic and the tenant binding a publish-time act.
+name: fachverfahren-mitteilungsdienst
+schemaVersion: v1
+
+author: Musterstadt Digital (Demo-Anbieter)
+category: Fachverfahren
+displayName: Fachverfahren Mitteilungsdienst
+iconUrl: https://www.vectorlogo.zone/logos/nodejs/nodejs-icon.svg
+description: |
+  Mandantenfähiger Mitteilungsdienst als kuratiertes Fachverfahren.
+
+  Stellt eine landschaftsbasierte TanStack-Start-Anwendung mit verwalteter
+  Postgres-Datenbank bereit. Onboarding, Versionierung und Deprovisionierung
+  laufen vollständig über die Codesphere Public API und eine CI/CD-Pipeline.
+
+  **Preismodell (siehe `configSchema.x-pricing`):** Abonnement je Mandant,
+  Grundgebühr 149 EUR/Monat inkl. 5 Bearbeiter:innen, jede weitere
+  Bearbeiter:in 9 EUR/Monat. Verrechnung monatlich, Kündigung zum Monatsende.
+
+# Landscape-based providers can't back these yet; declaring them false renders
+# an explicit "not supported" cross in the UI (matches csa-starter-service).
+capabilities:
+  backups: false
+  highAvailability: false
+  pause: false
+  pointInTimeRecovery: false
+
+backend:
+  landscape:
+    # This repository is both the catalogue entry and the deployable landscape.
+    gitUrl: https://github.com/codesphere-acceptance/codesphere-versioned-fachverfahren-blue-green-demo
+
+# User-configurable options, passed to the landscape as environment variables
+# (see infrastructure/codesphere/start-app.sh and ci.qa.yml).
+configSchema:
+  type: object
+  # ATS-08 step 8.2: the pricing model is a *custom field* on the curated
+  # entry. Codesphere validates provider.yml with a strict schema, so a custom
+  # top-level key is unreliable; instead we use an OpenAPI vendor extension
+  # (x-*), the same mechanism Codesphere itself uses for x-update-constraint /
+  # x-endpoint. This keeps the commercial terms machine-readable and part of
+  # the versioned definition. A human-readable copy also lives in `description`
+  # so it is visible in the Marketplace UI.
+  x-pricing:
+    model: subscription-per-tenant
+    currency: EUR
+    billingPeriod: monthly
+    base:
+      amount: 149
+      includedSeats: 5
+    additionalSeat:
+      amount: 9
+    cancellation: end-of-month
+  properties:
+    APP_VERSION:
+      type: string
+      description: Angezeigte Anwendungsversion des Fachverfahrens.
+    TENANT_NAME:
+      type: string
+      description: Name des Mandanten, für den die Instanz betrieben wird.
+  required:
+    - APP_VERSION
+    - TENANT_NAME
+  additionalProperties: false
+
+# Secret inputs, injected into the landscape's vault (referenced as
+# ${{ vault.POSTGRES_PASSWORD }} etc. in ci.qa.yml).
+secretsSchema:
+  type: object
+  properties:
+    POSTGRES_PASSWORD:
+      type: string
+      format: password
+      description: Passwort des Anwendungs-Datenbankbenutzers.
+    POSTGRES_SUPERUSER_PASSWORD:
+      type: string
+      format: password
+      description: Superuser-Passwort der verwalteten Postgres-Instanz.
+  required:
+    - POSTGRES_PASSWORD
+    - POSTGRES_SUPERUSER_PASSWORD
+
+# Runtime details surfaced after provisioning. `hostname` is computed by
+# Codesphere for landscape-based providers; rendering it as a URI makes it a
+# clickable link in the service details.
+detailsSchema:
+  type: object
+  properties:
+    hostname:
+      type: string
+      format: uri
+      readOnly: true
+  additionalProperties: false
+
+# Landscape-based providers don't have configurable plans.
+resourceParameters: {}
+plans: []
+
+# ATS-08 steps 8.3 / 8.9 / A7: two versions that COEXIST. Each pins an exact
+# state of this repo (a release tag) and the ci profile used to deploy it.
+# Versions are append-only in Codesphere: publishing a new minor adds 1.1.0
+# next to 1.0.0 rather than replacing it, so running 1.0.0 instances keep
+# working while new instances (or upgrades) can pick 1.1.0.
+versions:
+  1.0.0:
+    ciProfile: qa
+    gitRef: v1.0.0
+    appVersion: Mitteilungsdienst 1.0.0
+    description: Erste live geschaltete Version des Fachverfahrens.
+  1.1.0:
+    ciProfile: qa
+    gitRef: v1.1.0
+    appVersion: Mitteilungsdienst 1.1.0
+    description: |
+      Minor-Release, koexistiert mit 1.0.0.
+      - Ausdrückliches Preismodell in der Katalog-Metadaten (x-pricing)
+      - Mandantenname als Pflichtkonfiguration

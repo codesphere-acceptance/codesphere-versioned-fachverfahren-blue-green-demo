@@ -18,6 +18,13 @@
     "dev:up": "docker compose -f infrastructure/dev/docker-compose.yml up -d --wait",
     "dev:down": "docker compose -f infrastructure/dev/docker-compose.yml down",
     "dev:reset": "docker compose -f infrastructure/dev/docker-compose.yml down -v",
-    "dev:logs": "docker compose -f infrastructure/dev/docker-compose.yml logs -f"
+    "dev:logs": "docker compose -f infrastructure/dev/docker-compose.yml logs -f",
+    "catalogue:validate": "bash infrastructure/catalogue/provider.sh validate",
+    "catalogue:publish": "bash infrastructure/catalogue/provider.sh publish",
+    "catalogue:list": "bash infrastructure/catalogue/provider.sh list",
+    "catalogue:delete": "bash infrastructure/catalogue/provider.sh delete"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
   }
 }

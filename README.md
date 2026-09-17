@@ -1,19 +1,44 @@
-# Codesphere Platform Demonstration
+# Versioned Fachverfahren — Codesphere Marketplace Demo (ATS-08)
 
-A small TanStack Start application with Codesphere landscape definitions for a
-development and QA setup.
+A curated, versioned **Fachverfahren** published as a Codesphere *managed
+service*. The repository is two things at once:
+
+1. **A deployable landscape** — a small TanStack Start application with
+   Codesphere landscape definitions (`ci.dev.yml` / `ci.qa.yml`). This is the
+   workload that actually runs.
+2. **A curated catalogue entry** — `provider.yml` turns that landscape into a
+   versioned, org-scoped, priced entry in the Codesphere Marketplace, published
+   and de-provisioned through the Codesphere Public API by a CI/CD pipeline.
+
+Together they demonstrate the full ATS-08 lifecycle: a vendor onboards a
+Fachverfahren as a curated managed service via a PR that runs an automated
+verification pipeline, resulting in an org-scoped catalogue entry visible in the
+UI and the public API but invisible to other tenants; a newer version coexists
+with the old; and the service can later be removed and de-provisioned. See
+[Fachverfahren Catalogue (ATS-08)](#fachverfahren-catalogue-ats-08).
 
 ## Contents
 
-- `demo-app/`: TanStack Start application using Drizzle ORM and Postgres.
+- `provider.yml`: The curated **managed-service provider** definition — the
+  catalogue entry. Declares identity, the pricing model (`configSchema.x-pricing`),
+  config/secrets schemas, and the coexisting `versions` (each pinned to a
+  landscape `gitRef` + `ciProfile`).
+- `demo-app/`: TanStack Start application using Drizzle ORM and Postgres — the
+  landscape workload the provider deploys.
 - `ci.dev.yml` and `ci.qa.yml`: Codesphere landscape definitions. The dev
   profile runs Vite with hot reload; the QA profile builds and serves the
   compiled app.
+- `infrastructure/catalogue/`: The catalogue client (`provider.sh`:
+  validate / publish / list / delete against the managed-services API) and the
+  local policy gate (`validate-provider.mjs`).
 - `infrastructure/`: Local Postgres setup for development, the Codesphere
   startup script used by deployed landscapes, and the preview-deployment
   scaffolding script (`infrastructure/preview/`).
+- `.github/workflows/catalogue.yml`: Verifies `provider.yml` on every PR and
+  registers / de-registers the provider via the Public API on merge.
 - `.github/workflows/preview-deployment.yml`: Creates a Codesphere preview
-  workspace per pull request and tears it down on close.
+  workspace per pull request and tears it down on close (the ATS-03 deployment
+  cross-reference).
 
 ## Local Development
 
@@ -136,6 +161,87 @@ Docker Desktop or the Docker daemon.
 
 **Migrations fail or connection is refused.** Start Postgres with
 `pnpm dev:up` and check that `.env.local` points at the right port.
+
+## Fachverfahren Catalogue (ATS-08)
+
+`provider.yml` is the curated catalogue entry; `infrastructure/catalogue/provider.sh`
+and `.github/workflows/catalogue.yml` drive its lifecycle through the Codesphere
+managed-services Public API.
+
+### How the pieces map to the platform
+
+- **Curated entry with commercial terms (A2).** `provider.yml` carries the
+  usual metadata *and* the pricing model as an OpenAPI vendor extension,
+  `configSchema.x-pricing` (mirrored human-readably into `description`).
+  Codesphere validates the definition against a strict schema, so custom data
+  lives in an `x-` extension — the same mechanism used by `x-update-constraint`
+  and `x-endpoint` — rather than an unknown top-level key.
+- **Coexisting versions (A1, A7).** The `versions` map declares `1.0.0` and
+  `1.1.0`, each pinned to its own release tag and `ciProfile`. Versions are
+  append-only in Codesphere: publishing `1.1.0` adds it next to `1.0.0` instead
+  of replacing it, so live instances keep running and new ones (or upgrades)
+  can pick the newer version.
+- **Org scope / tenant separation (A6).** Scope is *not* part of `provider.yml`
+  — Codesphere takes `scope` in the publish request. The pipeline applies
+  `scope: { type: team, teamIds: [...] }` from `CS_TEAM_IDS`, so the entry is
+  visible only inside the vendor org.
+- **Verification pipeline (A20).** Every PR touching `provider.yml` runs
+  `provider.sh validate` (the `verify` job) — a no-network policy gate that
+  rejects a broken curated entry before it can reach the catalogue.
+- **Two role-appropriate interfaces (A13, A38).** The same entry is visible in
+  the Marketplace UI and returned by `GET /managed-services/providers` (surfaced
+  by `provider.sh list`).
+
+### Step-by-step (ATS-08 8.1–8.12)
+
+| Step | Do this | Command / place |
+| --- | --- | --- |
+| 8.2 add pricing field | edit `configSchema.x-pricing` | `provider.yml` |
+| 8.3 bump version | add a higher entry to `versions` | `provider.yml` |
+| 8.4 set org scope | set the target team id(s) | `CS_TEAM_IDS` (publish request, not the file) |
+| 8.5 add to catalogue | open a PR, then merge | `catalogue.yml` → `verify`, then `register` (upsert) |
+| 8.6 verification pipeline | automatic on PR | `provider.sh validate` |
+| 8.7 deployment (ATS-03) | preview deploy of a version | `preview-deployment.yml` |
+| 8.8 show in UI + API | list providers for the org team | Marketplace UI · `provider.sh list` |
+| 8.9 bump an instance | choose `1.1.0` for a running service | Codesphere UI (service → version) |
+| 8.10 cross-tenant check | list as a different team | `CS_QUERY_TEAM_ID` = another team → `provider.sh list` |
+| 8.11 remove via PR | delete `provider.yml`, merge | `catalogue.yml` → `register` (delete) |
+| 8.12 confirm gone | list again; check instances | `provider.sh list` (UI + API) |
+
+Each entry in `versions` pins a **release tag** (`v1.0.0`, `v1.1.0`). Registering
+the provider only stores metadata, but deploying or bumping an instance to a
+version makes Codesphere fetch that `gitRef`, so those tags must exist:
+
+```bash
+git tag v1.0.0 <commit-of-initial-version> && git push origin v1.0.0
+git tag v1.1.0 <commit-of-updated-version> && git push origin v1.1.0
+```
+
+### One-time setup
+
+The catalogue workflow needs one GitHub secret and up to three variables:
+
+- secret `CS_TOKEN` — Codesphere API token of the publishing (technical) user.
+  Its Git connection is used to pull this repo, so it must have access.
+- variable `CS_TEAM_IDS` — comma-separated team ids to scope the provider to (A6).
+- variable `CS_QUERY_TEAM_ID` — a team id used for `list` visibility checks; set
+  it to a team **outside** `CS_TEAM_IDS` to demonstrate the cross-tenant check.
+- variable `CODESPHERE_INSTANCE_URL` — API origin; defaults to
+  `https://cloud.codesphere.com` (shared with the preview workflow).
+
+To drive the API locally instead of via CI:
+
+```bash
+cp infrastructure/catalogue/catalogue.env.example infrastructure/catalogue/catalogue.env
+# edit catalogue.env: CS_TOKEN, CS_TEAM_IDS at minimum
+bash infrastructure/catalogue/provider.sh validate   # local policy gate (no network)
+bash infrastructure/catalogue/provider.sh publish     # PUT upsert (register/update)
+bash infrastructure/catalogue/provider.sh list        # GET — visibility check
+bash infrastructure/catalogue/provider.sh delete      # DELETE — de-provision
+```
+
+`infrastructure/catalogue/catalogue.env` holds a live API token — it is
+gitignored; never commit it.
 
 ## Preview Deployments
 

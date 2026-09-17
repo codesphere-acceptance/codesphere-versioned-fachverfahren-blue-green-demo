@@ -1,0 +1,136 @@
+name: Fachverfahren Catalogue
+
+# The curated-catalogue lifecycle for the Fachverfahren managed-service
+# provider (ATS-08). Two independent jobs, keyed on the event:
+#
+#   verify    On every PR that touches provider.yml: run the local policy gate
+#             (the "automated verification pipeline", step 8.6 / A2, A20). No
+#             network, no side effects — a broken curated entry never reaches
+#             the catalogue.
+#
+#   register  On push to the default branch: reconcile the catalogue with the
+#             repository. If provider.yml is present it is upserted via the
+#             Codesphere Public API (register/update — steps 8.5/8.9, A1/A4);
+#             if the push deleted provider.yml, the provider is deleted and its
+#             instances de-provisioned (steps 8.11/8.12, A1/A4).
+#
+# workflow_dispatch also exposes list/publish/delete for driving the demo by
+# hand (e.g. the cross-tenant visibility check, step 8.10).
+#
+# Config (set once, like the preview workflow — see README):
+#   secret  CS_TOKEN                  Codesphere API token of the publishing user
+#   var     CS_TEAM_IDS               comma-separated team ids to scope to (A6)
+#   var     CS_QUERY_TEAM_ID          team id used for list/visibility checks
+#   var     CODESPHERE_INSTANCE_URL   API base URL (defaults to public cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Catalogue action to run
+        type: choice
+        options: [validate, list, publish, delete]
+        default: validate
+  pull_request:
+    paths:
+      - provider.yml
+      - infrastructure/catalogue/**
+      - .github/workflows/catalogue.yml
+  push:
+    branches: [main]
+    paths:
+      - provider.yml
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # PR gate — the automated verification pipeline (step 8.6). No credentials.
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Verify curated provider.yml
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+      - name: Install (yaml parser for the policy gate)
+        run: pnpm install --frozen-lockfile
+      - name: Validate provider.yml against catalogue policies
+        run: bash infrastructure/catalogue/provider.sh validate
+
+  # ---------------------------------------------------------------------------
+  # Reconcile the catalogue with the repo on merge to the default branch.
+  # ---------------------------------------------------------------------------
+  register:
+    name: Register / de-register provider
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency: catalogue-register
+    env:
+      CS_TOKEN: ${{ secrets.CS_TOKEN }}
+      CS_TEAM_IDS: ${{ vars.CS_TEAM_IDS }}
+      CS_QUERY_TEAM_ID: ${{ vars.CS_QUERY_TEAM_ID }}
+      CS_API: ${{ vars.CODESPHERE_INSTANCE_URL || 'https://cloud.codesphere.com' }}/api
+      GIT_URL: ${{ github.server_url }}/${{ github.repository }}
+      GIT_REF: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2 # need the previous commit to detect a deletion
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Preflight — required config present
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$CS_TOKEN" ]    || fail "CS_TOKEN secret is not set."
+          [ -n "$CS_TEAM_IDS" ] || fail "CS_TEAM_IDS variable is not set — the provider must be org-scoped (A6)."
+      - name: Reconcile catalogue
+        run: |
+          # Publish when provider.yml exists; delete when the push removed it.
+          if git diff --name-status "${{ github.event.before }}" "${{ github.sha }}" \
+               | grep -qE '^D[[:space:]]+provider\.yml$'; then
+            echo "provider.yml was deleted — de-registering."
+            # Restore the file from the parent commit so we can read name/version.
+            git show "${{ github.event.before }}:provider.yml" > provider.yml
+            bash infrastructure/catalogue/provider.sh delete
+          else
+            echo "provider.yml present — registering (upsert)."
+            bash infrastructure/catalogue/provider.sh publish
+          fi
+      - name: Show catalogue after reconcile
+        if: always()
+        run: bash infrastructure/catalogue/provider.sh list || true
+
+  # ---------------------------------------------------------------------------
+  # Manual demo driver (cross-tenant check, ad-hoc publish/delete/list).
+  # ---------------------------------------------------------------------------
+  dispatch:
+    name: ${{ inputs.action }} (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      CS_TOKEN: ${{ secrets.CS_TOKEN }}
+      CS_TEAM_IDS: ${{ vars.CS_TEAM_IDS }}
+      CS_QUERY_TEAM_ID: ${{ vars.CS_QUERY_TEAM_ID }}
+      CS_API: ${{ vars.CODESPHERE_INSTANCE_URL || 'https://cloud.codesphere.com' }}/api
+      GIT_URL: ${{ github.server_url }}/${{ github.repository }}
+      GIT_REF: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Run ${{ inputs.action }}
+        run: bash infrastructure/catalogue/provider.sh "${{ inputs.action }}"
