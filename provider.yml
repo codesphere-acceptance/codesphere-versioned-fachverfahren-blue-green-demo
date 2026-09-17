@@ -28,9 +28,10 @@ description: |
   Postgres-Datenbank bereit. Onboarding, Versionierung und Deprovisionierung
   laufen vollständig über die Codesphere Public API und eine CI/CD-Pipeline.
 
-  **Preismodell (siehe `configSchema.x-pricing`):** Abonnement je Mandant,
-  Grundgebühr 149 EUR/Monat inkl. 5 Bearbeiter:innen, jede weitere
-  Bearbeiter:in 9 EUR/Monat. Verrechnung monatlich, Kündigung zum Monatsende.
+  Preismodell: Abonnement je Mandant. Grundgebühr 149 EUR/Monat inkl. 5
+  Bearbeiter:innen, jede weitere Bearbeiter:in 9 EUR/Monat. Verrechnung
+  monatlich, Kündigung zum Monatsende. Die strukturierten Preisdaten stehen
+  maschinenlesbar in configSchema.x-pricing.
 
 # Landscape-based providers can't back these yet; declaring them false renders
 # an explicit "not supported" cross in the UI (matches csa-starter-service).
@@ -66,15 +67,16 @@ configSchema:
     additionalSeat:
       amount: 9
     cancellation: end-of-month
+  # The deployed application version is chosen via the provider `versions`
+  # selector (see below) and shown from each version's `appVersion` label — so
+  # it is NOT a user-entered config field. The only per-instance option is the
+  # tenant this instance is operated for (mandantenfähig / A6). Codesphere
+  # injects config values into the landscape as environment variables.
   properties:
-    APP_VERSION:
-      type: string
-      description: Angezeigte Anwendungsversion des Fachverfahrens.
     TENANT_NAME:
       type: string
-      description: Name des Mandanten, für den die Instanz betrieben wird.
+      description: Mandant, für den diese Instanz des Fachverfahrens betrieben wird.
   required:
-    - APP_VERSION
     - TENANT_NAME
   additionalProperties: false
 
