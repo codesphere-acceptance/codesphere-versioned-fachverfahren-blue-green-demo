@@ -98,7 +98,13 @@ if (!versions || typeof versions !== "object" || Array.isArray(versions)) {
 			err(`version '${ver}' must be an object with gitRef and ciProfile.`);
 			continue;
 		}
-		if (!spec.gitRef) err(`version '${ver}' is missing required \`gitRef\`.`);
+		if (!spec.gitRef) {
+			err(`version '${ver}' is missing required \`gitRef\`.`);
+		} else if (spec.gitRef !== `v${ver}`) {
+			// The register pipeline auto-creates this tag at the merged commit, so
+			// the ref must be derivable from the version key. Enforce the convention.
+			err(`version '${ver}' must set \`gitRef: v${ver}\` (release-tag convention) — found '${spec.gitRef}'.`);
+		}
 		if (!spec.ciProfile) err(`version '${ver}' is missing required \`ciProfile\`.`);
 	}
 }

@@ -207,11 +207,22 @@ managed-services Public API.
 
 Each entry in `versions` pins a **release tag** (`v1.0.0`, `v1.1.0`). Registering
 the provider only stores metadata, but deploying or bumping an instance to a
-version makes Codesphere fetch that `gitRef`, so those tags must exist:
+version makes Codesphere fetch that `gitRef`, so those tags must exist. Two
+mechanisms keep them correct so you never tag by hand:
+
+- **Convention, enforced on PR.** `gitRef` must be `v<version>` (e.g. version
+  `1.2.0` → `gitRef: v1.2.0`). `provider.sh validate` rejects any other value,
+  so a typo can't reach the catalogue.
+- **Tags created on merge.** The `register` job runs
+  `infrastructure/catalogue/sync-release-tags.sh` before publishing: for each
+  version whose tag doesn't exist yet, it creates that tag at the merged commit
+  and pushes it. Existing tags are never moved — released versions are
+  immutable, so an older version's tag keeps pointing at its original commit.
+
+To reconcile tags by hand (e.g. against `HEAD`):
 
 ```bash
-git tag v1.0.0 <commit-of-initial-version> && git push origin v1.0.0
-git tag v1.1.0 <commit-of-updated-version> && git push origin v1.1.0
+bash infrastructure/catalogue/sync-release-tags.sh
 ```
 
 ### One-time setup
