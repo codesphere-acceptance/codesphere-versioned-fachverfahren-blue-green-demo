@@ -27,10 +27,9 @@ coverage/
 .env
 .env.local
 
-# Preview-deployment scaffolding — holds a live Codesphere API token;
-# see infrastructure/preview/preview.env.example
-infrastructure/preview/preview.env
-
 # Catalogue (managed-services) credentials — holds a live Codesphere API token;
 # see infrastructure/catalogue/catalogue.env.example
 infrastructure/catalogue/catalogue.env
+
+# Deployed-instance id written by infrastructure/catalogue/instance.sh
+infrastructure/catalogue/.instance-id

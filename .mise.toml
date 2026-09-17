@@ -3,7 +3,7 @@
 #
 # jq/gh/direnv are pinned here too so the only things a developer's machine
 # has to provide are mise, direnv, and Docker — everything else (including
-# the CLIs infrastructure/preview/scaffold.sh needs) comes from mise, not
+# the CLIs infrastructure/catalogue/scaffold.sh needs) comes from mise, not
 # whatever happens to be on PATH via brew/apt/etc.
 [tools]
 node = "22.22.2"

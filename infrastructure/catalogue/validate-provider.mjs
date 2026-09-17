@@ -1,8 +1,8 @@
 // Local policy gate for the curated Fachverfahren provider.yml.
 //
-// This is the "automated verification pipeline" of ATS-08 step 8.6: it applies
-// the curation policies the catalogue enforces before a provider is published
-// (A2 curated model, A20 CI/CD). It is intentionally strict and dependency-
+// This is the "automated verification pipeline": it applies the curation policies
+// the catalogue enforces before a provider is published. It is intentionally
+// strict and dependency-
 // light — it parses the YAML and asserts the shape Codesphere expects, plus the
 // vendor-specific policies this demo cares about (pricing present, tenant
 // scoping left to publish time, coexisting versions).
@@ -45,7 +45,7 @@ if (!/^v[0-9]+$/.test(doc.schemaVersion ?? "")) {
 	err("`schemaVersion` is required and must match ^v[0-9]+ (e.g. v1).");
 }
 
-// --- Required curated metadata (A2: catalogue is more than a name) -------
+// --- Required curated metadata (catalogue is more than a name) -----------
 for (const field of ["displayName", "author", "category", "description", "iconUrl"]) {
 	if (!doc[field] || String(doc[field]).trim() === "") {
 		err(`\`${field}\` is required for a curated catalogue entry.`);
@@ -66,22 +66,22 @@ if (!doc.secretsSchema || typeof doc.secretsSchema !== "object") {
 	err("`secretsSchema` is required (OpenAPI schema object).");
 }
 
-// --- ATS-08 step 8.2 / A2: pricing model must be expressed ---------------
+// --- Pricing model must be expressed -------------------------------------
 const pricing = doc?.configSchema?.["x-pricing"];
 if (!pricing || typeof pricing !== "object") {
-	err("pricing policy: `configSchema.x-pricing` is required — the curated entry must express its commercial terms (ATS-08 step 8.2).");
+	err("pricing policy: `configSchema.x-pricing` is required — the curated entry must express its commercial terms.");
 } else {
 	for (const key of ["model", "currency", "billingPeriod"]) {
 		if (!pricing[key]) err(`pricing policy: \`configSchema.x-pricing.${key}\` is required.`);
 	}
 }
 
-// --- ATS-08 step 8.4 / A6: scope is a publish-time act, not in the file --
+// --- Scope is a publish-time act, not in the file --------------------------
 if (doc.scope) {
 	warn("`scope` should not live in provider.yml — Codesphere takes it in the publish request. The pipeline applies org scope from CS_TEAM_IDS. Remove `scope` from the file.");
 }
 
-// --- Versions (A1 lifecycle, A7 coexistence) -----------------------------
+// --- Versions (lifecycle + coexistence) ----------------------------------
 const versions = doc.versions;
 const semver = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z-.]+)?$/;
 if (!versions || typeof versions !== "object" || Array.isArray(versions)) {
@@ -90,7 +90,7 @@ if (!versions || typeof versions !== "object" || Array.isArray(versions)) {
 	const keys = Object.keys(versions);
 	if (keys.length === 0) err("`versions` must declare at least one version.");
 	if (keys.length < 2) {
-		warn(`only ${keys.length} version declared — ATS-08 (A7) showcases parallel versions; declare a second, higher version so it can coexist with the live one.`);
+		warn(`only ${keys.length} version declared — declare a second, higher version so it can coexist with the live one.`);
 	}
 	for (const [ver, spec] of Object.entries(versions)) {
 		if (!semver.test(ver)) err(`version key '${ver}' is not valid SemVer.`);
@@ -98,7 +98,13 @@ if (!versions || typeof versions !== "object" || Array.isArray(versions)) {
 			err(`version '${ver}' must be an object with gitRef and ciProfile.`);
 			continue;
 		}
-		if (!spec.gitRef) err(`version '${ver}' is missing required \`gitRef\`.`);
+		if (!spec.gitRef) {
+			err(`version '${ver}' is missing required \`gitRef\`.`);
+		} else if (spec.gitRef !== `v${ver}`) {
+			// The register pipeline auto-creates this tag at the merged commit, so
+			// the ref must be derivable from the version key. Enforce the convention.
+			err(`version '${ver}' must set \`gitRef: v${ver}\` (release-tag convention) — found '${spec.gitRef}'.`);
+		}
 		if (!spec.ciProfile) err(`version '${ver}' is missing required \`ciProfile\`.`);
 	}
 }

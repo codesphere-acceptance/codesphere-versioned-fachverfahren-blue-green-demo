@@ -1,25 +1,25 @@
 name: Fachverfahren Catalogue
 
 # The curated-catalogue lifecycle for the Fachverfahren managed-service
-# provider (ATS-08). Two independent jobs, keyed on the event:
+# provider. Two independent jobs, keyed on the event:
 #
 #   verify    On every PR that touches provider.yml: run the local policy gate
-#             (the "automated verification pipeline", step 8.6 / A2, A20). No
-#             network, no side effects — a broken curated entry never reaches
-#             the catalogue.
+#             (the "automated verification pipeline"). No network, no side
+#             effects — a broken curated entry never reaches the catalogue.
 #
 #   register  On push to the default branch: reconcile the catalogue with the
-#             repository. If provider.yml is present it is upserted via the
-#             Codesphere Public API (register/update — steps 8.5/8.9, A1/A4);
-#             if the push deleted provider.yml, the provider is deleted and its
-#             instances de-provisioned (steps 8.11/8.12, A1/A4).
+#             repository. If provider.yml is present, any release tag a version
+#             pins (gitRef) that doesn't exist yet is created at the merged
+#             commit, then the provider is upserted via the Codesphere Public
+#             API (register/update); if the push deleted provider.yml, the
+#             provider is deleted and its instances de-provisioned.
 #
 # workflow_dispatch also exposes list/publish/delete for driving the demo by
-# hand (e.g. the cross-tenant visibility check, step 8.10).
+# hand (e.g. the cross-tenant visibility check).
 #
-# Config (set once, like the preview workflow — see README):
+# Config (set once — see README):
 #   secret  CS_TOKEN                  Codesphere API token of the publishing user
-#   var     CS_TEAM_IDS               comma-separated team ids to scope to (A6)
+#   var     CS_TEAM_IDS               comma-separated team ids to scope to
 #   var     CS_QUERY_TEAM_ID          team id used for list/visibility checks
 #   var     CODESPHERE_INSTANCE_URL   API base URL (defaults to public cloud)
 
@@ -46,7 +46,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # PR gate — the automated verification pipeline (step 8.6). No credentials.
+  # PR gate — the automated verification pipeline. No credentials.
   # ---------------------------------------------------------------------------
   verify:
     name: Verify curated provider.yml
@@ -71,6 +71,9 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency: catalogue-register
+    # Needs write access to create/push the release tags each version pins.
+    permissions:
+      contents: write
     env:
       CS_TOKEN: ${{ secrets.CS_TOKEN }}
       CS_TEAM_IDS: ${{ vars.CS_TEAM_IDS }}
@@ -92,7 +95,14 @@ jobs:
         run: |
           fail() { echo "::error::$1"; exit 1; }
           [ -n "$CS_TOKEN" ]    || fail "CS_TOKEN secret is not set."
-          [ -n "$CS_TEAM_IDS" ] || fail "CS_TEAM_IDS variable is not set — the provider must be org-scoped (A6)."
+          [ -n "$CS_TEAM_IDS" ] || fail "CS_TEAM_IDS variable is not set — the provider must be org-scoped."
+      - name: Reconcile release tags
+        # Skipped on a deletion push (provider.yml absent). Creates any tag a
+        # version pins but that doesn't exist yet, at this merged commit, so a
+        # later deploy/bump can't fail on a missing gitRef. Existing tags are
+        # left untouched (released versions are immutable). Runs before publish.
+        if: hashFiles('provider.yml') != ''
+        run: bash infrastructure/catalogue/sync-release-tags.sh "${{ github.sha }}"
       - name: Reconcile catalogue
         run: |
           # Publish when provider.yml exists; delete when the push removed it.

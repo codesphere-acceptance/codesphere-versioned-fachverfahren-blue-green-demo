@@ -4,10 +4,9 @@
 # Consumes the artifact produced by the prepare stage (demo-app/.output, kept on
 # the _workspace volume) and brings the service up in the correct order:
 #   1. apply committed Drizzle migrations against the managed Postgres
-#   2. (dev only) seed reference messages when SEED_DEV=1
-#   3. start the Nitro SSR server in the foreground
+#   2. start the Nitro SSR server in the foreground
 #
-# Env contract (provided by ci.dev.yml / ci.qa.yml):
+# Env contract (provided by ci.qa.yml):
 #   POSTGRES_HOST        required — managed Postgres hostname from Codesphere templates
 #   POSTGRES_PORT        optional — managed Postgres port (default 5432)
 #   POSTGRES_USER        required — application DB user configured on the provider
@@ -15,11 +14,6 @@
 #   POSTGRES_DB          required — application DB name configured on the provider
 #   APP_BASE_URL         required — public app origin
 #   PORT                 optional — bind port (default 3000)
-#   NODE_ENV             optional — "development" runs the Vite dev server with
-#                        hot reload; anything else (default "production") serves
-#                        the built Nitro output. This is the only switch between
-#                        the two profiles' runtime behaviour.
-#   SEED_DEV             optional — "1" runs the dev seed (dev stage only)
 set -euo pipefail
 
 require_env() {
@@ -91,20 +85,8 @@ if [[ -n "${POSTGRES_HOST:-}" ]]; then
 	validate_database_url
 
 	pnpm --dir demo-app db:migrate:ci
-
-	if [[ "${SEED_DEV:-0}" == "1" ]]; then
-		pnpm --dir demo-app db:seed:dev:ci
-	fi
 else
 	echo "no POSTGRES_HOST set — starting without a database"
-fi
-
-if [[ "$NODE_ENV" == "development" ]]; then
-	# Hot reload inside the workspace. Vite watches the shared filesystem, so an
-	# edit in the Cloud IDE reaches the running Landscape without a redeploy.
-	# The prepare stage does not build in this mode — there is no .output to serve.
-	echo "starting Vite dev server (hot reload)"
-	exec pnpm --dir demo-app dev:ci
 fi
 
 echo "starting Nitro production server"

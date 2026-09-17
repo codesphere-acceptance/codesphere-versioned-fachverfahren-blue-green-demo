@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "dotenv -e .env.local -- vite dev --port 3000",
-    "dev:ci": "vite dev --port 3000",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "test": "vitest run --config vitest.config.ts",
@@ -13,8 +12,7 @@
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate --config drizzle.config.ts",
     "db:migrate:ci": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:seed:dev": "dotenv -e .env.local -- tsx ./src/db/seed.dev.ts",
-    "db:seed:dev:ci": "tsx ./src/db/seed.dev.ts"
+    "db:seed:dev": "dotenv -e .env.local -- tsx ./src/db/seed.dev.ts"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.132.0",

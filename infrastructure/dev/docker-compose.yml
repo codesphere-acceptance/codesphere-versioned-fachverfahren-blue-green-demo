@@ -2,8 +2,8 @@
 # Docker Compose for Local Development
 # ===========================================
 # Local Postgres for demo-app. On Codesphere this role is filled by the managed
-# Postgres declared in ci.dev.yml / ci.qa.yml — this file exists only so the app
-# can be developed and tested without a workspace.
+# Postgres declared in ci.qa.yml — this file exists only so the app can be
+# developed and tested without a workspace.
 #
 # Usage (from repo root):
 #   pnpm dev:up      # start

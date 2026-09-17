@@ -1,7 +1,7 @@
 # Codesphere Managed Service Provider — curated Fachverfahren catalogue entry.
 #
-# This file turns the landscape in this repository (ci.dev.yml / ci.qa.yml +
-# demo-app) into a *versioned, curated managed service* in the Codesphere
+# This file turns the landscape in this repository (ci.qa.yml + demo-app) into
+# a *versioned, curated managed service* in the Codesphere
 # Marketplace catalogue. The landscape is the deployable workload; this file is
 # the commercial + lifecycle metadata a vendor publishes for it.
 #
@@ -9,7 +9,7 @@
 # same repo). Published via the Codesphere Public API — see
 # infrastructure/catalogue/provider.sh and .github/workflows/catalogue.yml.
 #
-# NOTE on scope (ATS-08 step 8.4): `scope`/`teamIds` are deliberately NOT in
+# NOTE on scope: `scope`/`teamIds` are deliberately NOT in
 # this file. Codesphere takes them in the publish request, not the provider
 # file, so org scoping is applied by the registration pipeline
 # (CS_TEAM_IDS in infrastructure/catalogue/catalogue.env). This keeps the
@@ -50,7 +50,7 @@ backend:
 # (see infrastructure/codesphere/start-app.sh and ci.qa.yml).
 configSchema:
   type: object
-  # ATS-08 step 8.2: the pricing model is a *custom field* on the curated
+  # The pricing model is a *custom field* on the curated
   # entry. Codesphere validates provider.yml with a strict schema, so a custom
   # top-level key is unreliable; instead we use an OpenAPI vendor extension
   # (x-*), the same mechanism Codesphere itself uses for x-update-constraint /
@@ -70,7 +70,7 @@ configSchema:
   # The deployed application version is chosen via the provider `versions`
   # selector (see below) and shown from each version's `appVersion` label — so
   # it is NOT a user-entered config field. The only per-instance option is the
-  # tenant this instance is operated for (mandantenfähig / A6). Codesphere
+  # tenant this instance is operated for (mandantenfähig). Codesphere
   # injects config values into the landscape as environment variables.
   properties:
     TENANT_NAME:
@@ -119,7 +119,7 @@ plans:
     description: Ressourcen richten sich nach dem qa-CI-Profil der Landschaft.
     parameters: {}
 
-# ATS-08 steps 8.3 / 8.9 / A7: two versions that COEXIST. Each pins an exact
+# Two versions that COEXIST. Each pins an exact
 # state of this repo (a release tag) and the ci profile used to deploy it.
 # Versions are append-only in Codesphere: publishing a new minor adds 1.1.0
 # next to 1.0.0 rather than replacing it, so running 1.0.0 instances keep
@@ -138,3 +138,10 @@ versions:
       Minor-Release, koexistiert mit 1.0.0.
       - Ausdrückliches Preismodell in der Katalog-Metadaten (x-pricing)
       - Mandantenname als Pflichtkonfiguration
+  1.2.0:
+    ciProfile: qa
+    gitRef: v1.2.0
+    appVersion: Mitteilungsdienst 1.2.0
+    description: |
+      Minor-Release, koexistiert mit 1.0.0 und 1.1.0.
+      - End-to-End-Test der automatischen Release-Tag-Erzeugung im register-Job
