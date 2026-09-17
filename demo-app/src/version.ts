@@ -5,7 +5,7 @@
 // instances deployed from different versions therefore show different values
 // here — which is what makes the parallel operation of versions visible in the
 // demo.
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.2.0";
 
 // The tenant this instance is operated for. For a managed-service deployment
 // Codesphere injects the provider's TENANT_NAME config value into the landscape

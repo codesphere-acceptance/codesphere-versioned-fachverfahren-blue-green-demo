@@ -138,3 +138,10 @@ versions:
       Minor-Release, koexistiert mit 1.0.0.
       - Ausdrückliches Preismodell in der Katalog-Metadaten (x-pricing)
       - Mandantenname als Pflichtkonfiguration
+  1.2.0:
+    ciProfile: qa
+    gitRef: v1.2.0
+    appVersion: Mitteilungsdienst 1.2.0
+    description: |
+      Minor-Release, koexistiert mit 1.0.0 und 1.1.0.
+      - End-to-End-Test der automatischen Release-Tag-Erzeugung im register-Job
